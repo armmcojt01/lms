@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Clean URLs: /course/5 instead of course_view.php?id=5
+RewriteRule ^course/([0-9]+)/?$ course_view.php?id=$1 [L]
+
+# Clean login/register URLs
+RewriteRule ^login/?$ login.php [L]
+RewriteRule ^register/?$ register.php [L]
