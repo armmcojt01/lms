@@ -10,10 +10,7 @@ $courseId = intval($_GET['id'] ?? 0);
 if(!$courseId) die('Invalid course ID');
 
 // Fetch course
-$stmt = $pdo->prepare('SELECT c.*, u.fname, u.lname 
-                       FROM courses c 
-                       LEFT JOIN users u ON c.proponent_id = u.id 
-                       WHERE c.id = ?');
+$stmt = $pdo->prepare('SELECT c.*, u.fname, u.lname FROM courses c LEFT JOIN users u ON c.proponent_id = u.id WHERE c.id = ?');
 $stmt->execute([$courseId]);
 $course = $stmt->fetch();
 if(!$course) die('Course not found');
@@ -22,9 +19,15 @@ if(!$course) die('Course not found');
 $enrollment = null;
 
 if (is_student()) {
+
     // BLOCK if course expired or inactive
     $today = date('Y-m-d');
-    if ($course['is_active'] == 0 || ($course['expires_at'] && $today > $course['expires_at'])) {
+
+    if (
+        $course['is_active'] == 0 ||
+        ($course['expires_at'] && $today > $course['expires_at'])
+    ) {
+       
         die('<div class="alert alert-danger m-4">
                 <h5>Course Unavailable</h5>
                 <p>This course has expired or is no longer active.</p>
@@ -57,6 +60,7 @@ if (is_student()) {
     }
 }
 
+
 // Handle AJAX time tracking
 if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['seconds']) && is_student()) {
     $seconds = intval($_POST['seconds']);
@@ -68,22 +72,8 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['seconds']) && is_student
     exit;
 }
 
-// Handle completion with minimum time requirement
+// Handle completion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && is_student()) {
-    // Fetch latest total_time_seconds
-    $stmt = $pdo->prepare("SELECT total_time_seconds FROM enrollments WHERE id=?");
-    $stmt->execute([$enrollment['id']]);
-    $totalTime = (int)$stmt->fetchColumn();
-
-    if ($totalTime < 60) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'You must spend at least 60 seconds in this course before completing it.'
-        ]);
-        exit;
-    }
-
-    // Mark as completed
     $stmt = $pdo->prepare("
         UPDATE enrollments 
         SET status = 'completed', completed_at = NOW() 
@@ -94,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && 
     echo json_encode(['success' => true]);
     exit;
 }
+
 ?>
 <!doctype html>
 <html>
@@ -106,11 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 </head>
-<<<<<<< HEAD
-<body class="bg-light d-flex">
-    <div class="sidebar-container">
-        <?php include __DIR__ . '/../inc/sidebar.php'; ?>
-=======
 <body class="d-flex">
     <div class="sidebar-container">
         <?php include __DIR__ . '/../inc/sidebar.php'; ?>
@@ -125,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && 
         <iframe
             src="<?= BASE_URL ?>/uploads/pdf/<?= htmlspecialchars($course['file_pdf']) ?>"
             width="100%"
-            height="800px"
+            height="600"
             style="border:1px solid #ccc">
         </iframe>
 
@@ -136,111 +122,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && 
                 Open PDF in new tab
             </a>
         </p>
->>>>>>> f95964b909f01529c15cae74dd9c428ae4617bcf
     </div>
+    <?php endif; ?>
 
-    <div class="main flex-1 p-4" style="padding-right: 10px; margin-left: 250px">
-        <h3><?=htmlspecialchars($course['title'])?></h3>
-        <p><?=nl2br(htmlspecialchars($course['description']))?></p>
 
-        <?php if($course['file_pdf']): ?>
-        <div class="mb-3">
-            <h5>PDF:</h5>
-            <iframe
-                src="<?= BASE_URL ?>/uploads/pdf/<?= htmlspecialchars($course['file_pdf']) ?>"
-                width="100%"
-                height="600"
-                style="border:1px solid #ccc">
-            </iframe>
-            <p class="mt-2">
-                <a class="btn btn-sm btn-outline-primary"
-                   href="<?= BASE_URL ?>/uploads/pdf/<?= htmlspecialchars($course['file_pdf']) ?>"
-                   target="_blank">
-                    Open PDF in new tab
-                </a>
-            </p>
-        </div>
-        <?php endif; ?>
-
-        <?php if($course['file_video']): ?>
-        <div class="mb-3">
-            <h5>Video:</h5>
-            <video id="courseVideo" width="100%" controls>
-                <source src="<?= BASE_URL ?>/uploads/video/<?= htmlspecialchars($course['file_video']) ?>" type="video/mp4">
-                Your browser does not support HTML5 video.
-            </video>
-        </div>
-        <?php if($enrollment['status'] === 'completed'): ?>
-            <span class="badge bg-success">Completed</span>
-            <div class="alert alert-success mt-2">
-                You have completed this course 🎓
-            </div>
+    <?php if($course['file_video']): ?>
+    <div class="mb-3">
+        <h5>Video:</h5>
+        <video id="courseVideo" width="100%" controls>
+            <source src="<?= BASE_URL ?>/uploads/video/<?= htmlspecialchars($course['file_video']) ?>" type="video/mp4">
+            Your browser does not support HTML5 video.
+        </video>
+    </div>
+   <?php if($enrollment['status'] === 'completed'): ?>
+    <span class="badge bg-success">Completed</span>
         <?php else: ?>
             <span class="badge bg-warning">Ongoing</span>
         <?php endif; ?>
+        <?php if($enrollment['status'] === 'completed'): ?>
+            <div class="alert alert-success">
+                You have completed this course 🎓
+            </div>
         <?php endif; ?>
+    <?php endif; ?>
 
-        <?php if(is_student()): ?>
-        <div class="mb-3">
-            <strong>Time spent:</strong> <span id="timeSpent"><?= intval($enrollment['total_time_seconds']) ?></span> seconds
-        </div>
-
-        <!-- Complete Button -->
-        <?php if($enrollment['status'] !== 'completed'): ?>
-            <button id="completeBtn" class="btn btn-success mb-3">Mark as Complete</button>
-        <?php endif; ?>
-
-        <script>
-        let totalSeconds = parseInt($('#timeSpent').text());
-
-        // auto update time spent
-        setInterval(function(){
-            totalSeconds++;
-            $('#timeSpent').text(totalSeconds);
-            $.post(window.location.href, {seconds:1});
-        },1000);
-
-        // PDF / Video Completion
-        let pdfReadSeconds = 0;
-        let pdfCompleted = false;
-        <?php if($course['file_pdf']): ?>
-        setInterval(function () {
-            if (pdfCompleted) return;
-            pdfReadSeconds++;
-            if (pdfReadSeconds >= 60) { // 60 seconds reading
-                pdfCompleted = true;
-                completeCourse();
-            }
-        }, 1000);
-        <?php endif; ?>
-
-        // Video ended
-        $('#courseVideo').on('ended', function () {
-            completeCourse();
-        });
-
-        // Complete button click
-        $('#completeBtn').on('click', function(){
-            completeCourse();
-        });
-
-        function completeCourse(){
-            $.post(window.location.href, { mark_completed: 1 }, function (res) {
-                try {
-                    let data = JSON.parse(res);
-                    if (data.success) {
-                        alert('Course marked as completed 🎉');
-                        location.reload();
-                    } else {
-                        alert(data.message || 'Unable to complete course.');
-                    }
-                } catch(e) {
-                    alert('Unexpected error.');
-                }
-            });
-        }
-        </script>
-        <?php endif; ?>
+<?php if(is_student()): ?>
+    <div class="mb-3">
+        <strong>Time spent:</strong> <span id="timeSpent"><?= intval($enrollment['total_time_seconds']) ?></span> seconds
     </div>
+
+    <!-- Complete Button -->
+    <?php if($enrollment['status'] !== 'completed'): ?>
+        <button id="completeBtn" class="btn btn-success mb-3">Mark as Complete</button>
+    <?php endif; ?>
+
+    <script>
+    let totalSeconds = parseInt($('#timeSpent').text());
+
+    // auto update time spent
+    setInterval(function(){
+        totalSeconds++;
+        $('#timeSpent').text(totalSeconds);
+        $.post(window.location.href, {seconds:1});
+    },1000);
+
+    // PDF / Video Completion
+    let pdfReadSeconds = 0;
+    let pdfCompleted = false;
+    <?php if($course['file_pdf']): ?>
+    setInterval(function () {
+        if (pdfCompleted) return;
+        pdfReadSeconds++;
+        if (pdfReadSeconds >= 60) { // 60 seconds reading
+            pdfCompleted = true;
+            completeCourse();
+        }
+    }, 1000);
+    <?php endif; ?>
+
+    // Video ended
+    $('#courseVideo').on('ended', function () {
+        completeCourse();
+    });
+
+    // Complete button click
+    $('#completeBtn').on('click', function(){
+        completeCourse();
+    });
+
+    function completeCourse(){
+        $.post(window.location.href, { mark_completed: 1 }, function () {
+            alert('Course marked as completed 🎉');
+            location.reload();
+        });
+    }
+    </script>
+    <?php endif; ?>
+</div>
 </body>
 </html>
+
+
