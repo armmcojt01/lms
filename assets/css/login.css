@@ -51,7 +51,7 @@
 }
 
 .login-page .login-card {
-  background-color: #fff;
+  background-color: #1A3263;
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.1);
@@ -61,7 +61,7 @@
 }
 
 .login-page .login-card h4 {
-  color: var(--login-header);
+  color: var(--login-accent);
   margin-bottom: 1.5rem;
   font-weight: 600;
   text-align: center;
@@ -117,7 +117,7 @@
 }
 
 .login-page .login-register-link {
-  color: var(--login-text); /* new color for Register link */
+  color: var(--login-bg); /* new color for Register link */
   font-weight: 600;
 }
 

@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && 
         <iframe
             src="<?= BASE_URL ?>/uploads/pdf/<?= htmlspecialchars($course['file_pdf']) ?>"
             width="100%"
-            height="600"
+            height="800px"
             style="border:1px solid #ccc">
         </iframe>
 
