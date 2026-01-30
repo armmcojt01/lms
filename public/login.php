@@ -39,9 +39,18 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 <title>Login</title>
 <link href="<?= BASE_URL ?>/assets/css/login.css" rel="stylesheet">
 </head>
-<body class="login-page" bgcolor="#faf4ed">
+<body class="login-page" background: linear-gradient(
+  180deg,
+  #0F1C3F 0%,
+  #2A5298 50%,
+  #FFFFFF 100%
+);
+>
 <div class="login-page login-container">
   <div class="login-card">
+    <a href="<?= BASE_URL ?>/public/index.php" class="login-back-btn">
+    <i class="fas fa-arrow-left"></i> < Back to home
+  </a>
     <h4>Login</h4>
     <?php if($err): ?>
       <div class="login-alert"><?= htmlspecialchars($err) ?></div>

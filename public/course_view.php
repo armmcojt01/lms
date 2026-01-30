@@ -91,11 +91,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && 
 <head>
 <meta charset="utf-8">
 <title><?=htmlspecialchars($course['title'])?> - LMS</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/sidebar.css" rel="stylesheet">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
-<body class="bg-light d-flex">
-<?php include __DIR__ . '/../inc/sidebar.php'; ?>
+<body class="d-flex">
+    <div class="sidebar-container">
+        <?php include __DIR__ . '/../inc/sidebar.php'; ?>
+    </div>
 <div class="main flex-1 p-4">
     <h3><?=htmlspecialchars($course['title'])?></h3>
     <p><?=nl2br(htmlspecialchars($course['description']))?></p>
