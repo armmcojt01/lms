@@ -200,10 +200,8 @@ $users = $pdo->query("SELECT * FROM users ORDER BY created_at DESC")->fetchAll(P
                             <td><?= date('Y-m-d H:i', strtotime($u['created_at'])) ?></td>
                             <td class="table-actions">
                                 <?php if($act !== 'edit'): ?>
-            <p><a href="?act=edit&id=<?= $u['id'] ?>" class="btn btn-success btn-sm">Edit User</a></p>
-        <?php endif; ?>
-                            
-                            
+                                <a href="?act=edit&id=<?= $u['id'] ?>" class="btn btn-success btn-sm">Edit</a>
+                                <?php endif; ?>
                                 <a href="?act=delete&id=<?= $u['id'] ?>" onclick="return confirm('Delete user <?= htmlspecialchars($u['username']) ?>?')" class="btn btn-sm btn-danger">Delete</a>
                             </td>
                         </tr>
