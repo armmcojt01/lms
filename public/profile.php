@@ -126,7 +126,7 @@ foreach ($courses as $c) {
 
             <!-- Actions -->
             <div class="text-center">
-                <a href="<?= BASE_URL ?>/public/dashboard" class="modern-btn-warning modern-btn-sm">  
+                <a href="<?= BASE_URL ?>/public/edit_profile.php" class="modern-btn-warning modern-btn-sm">  
                     <i class="fas fa-edit"></i> Edit Profile
                 </a>
             </div>

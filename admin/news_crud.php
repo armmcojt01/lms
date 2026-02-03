@@ -144,8 +144,7 @@ if ($act === 'editform' && isset($_GET['id'])) {
             <a href="?act=editform&id=<?= $n['id'] ?>" class="btn btn-sm btn-warning">
               Edit
             </a>
-          </td>
-          <td>
+
             <a href="?act=delete&id=<?= $n['id'] ?>"
                class="btn btn-sm btn-danger"
                onclick="return confirm('Delete this news item?')">

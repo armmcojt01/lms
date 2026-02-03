@@ -224,10 +224,5 @@ $users = $pdo->query("SELECT * FROM users ORDER BY created_at DESC")->fetchAll(P
 function enablePassword() {
      document.getElementById('passwordField').disabled = false;
      }
-
-
-
-
-
 </script>
 </html>
