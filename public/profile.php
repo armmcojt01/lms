@@ -10,7 +10,6 @@ $u = current_user();
 $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
 $stmt->execute([$u['id'] ?? 0]);
 $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-
 $createdAt = $userData['created_at'] ?? null;
 
 // Function to get role display name
@@ -19,10 +18,33 @@ function get_role_display_name($role) {
         'admin' => 'Administrator',
         'proponent' => 'Proponent',
         'user' => 'Student',
-
     ];
     return $roles[$role] ?? ucfirst($role);
 }
+
+// Get user's course enrollments and statuses
+$counter = ['ongoing' => 0, 'completed' => 0, 'not_enrolled' => 0];
+
+// Query to get user's enrolled courses with their status
+$stmt = $pdo->prepare("
+    SELECT c.*, e.status as enroll_status 
+    FROM courses c 
+    LEFT JOIN enrollments e ON c.id = e.course_id AND e.user_id = ?
+");
+$stmt->execute([$u['id'] ?? 0]);
+$courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Count courses by status
+foreach ($courses as $c) {
+    if (!$c['enroll_status']) {
+        $counter['not_enrolled']++;
+    } elseif ($c['enroll_status'] === 'ongoing') {
+        $counter['ongoing']++;
+    } elseif ($c['enroll_status'] === 'completed') {
+        $counter['completed']++;
+    }
+}
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -89,22 +111,22 @@ function get_role_display_name($role) {
             <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-number"><?= $userStats['total_courses'] ?? 0 ?></div>
+                    <div class="stat-number"><?= $counter['ongoing'] ?></div>
                     <div class="stat-label">Total Courses</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number"><?= $userStats['completed'] ?? 0 ?></div>
+                    <div class="stat-number"><?= $counter['completed'] ?></div>
                     <div class="stat-label">Completed</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number"><?= $userStats['ongoing'] ?? 0 ?></div>
-                    <div class="stat-label">Ongoing</div>
+                    <div class="stat-number"><?= $counter['not_enrolled'] ?></div>
+                    <div class="stat-label">Not Enrolled</div>
                 </div>
             </div>
 
             <!-- Actions -->
             <div class="text-center">
-                <a href="<?= BASE_URL ?>/public/edit_profile.php" class="modern-btn-warning modern-btn-sm">  
+                <a href="<?= BASE_URL ?>/public/dashboard" class="modern-btn-warning modern-btn-sm">  
                     <i class="fas fa-edit"></i> Edit Profile
                 </a>
             </div>
