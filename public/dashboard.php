@@ -24,195 +24,191 @@ foreach ($courses as $c) {
     elseif ($c['enroll_status'] === 'ongoing') $counter['ongoing']++;
     elseif ($c['enroll_status'] === 'completed') $counter['completed']++;
 }
+
+// Fetch news/announcements - CORRECTED QUERY
+try {
+    $newsStmt = $pdo->prepare("
+        SELECT n.id, n.title, n.body AS content, n.created_at, u.username AS author 
+        FROM news n 
+        LEFT JOIN users u ON n.created_by = u.id 
+        WHERE n.is_published = 1 
+        ORDER BY n.created_at DESC 
+        LIMIT 5
+    ");
+    $newsStmt->execute();
+    $news = $newsStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $news = [];
+    error_log("News fetch error: " . $e->getMessage());
+}
 ?>
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <title>LMS Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/path/to/your/style.css"> <!-- adjust path -->
-    <style>
-        /* Layout Fix */
-        body {
-            display: flex;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .sidebar {
-            width: 240px;
-            min-height: 100vh;
-            padding: 1rem;
-            background-color: #fff;
-            border-right: 1px solid #ddd;
-            position: fixed;
-        }
-
-        .main {
-            margin-left: 240px;
-            padding: 20px;
-            flex: 1;
-            background-color: var(--home-bg, #E8E2DB)
-        }
-
-        .counter-card {
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            color: #fff;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .counter-card.bg-ongoing {
-            background-color: #28a745;
-        }
-
-        .counter-card.bg-completed {
-            background-color: #6c757d;
-        }
-
-        .counter-card.bg-not-enrolled {
-            background-color: #007bff;
-        }
-
-        .card a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .progress-bar {
-            transition: width 0.8s ease;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
-
-            .lms-sidebar {
-                position: relative;
-                width: 100%;
-            }
-
-            .main {
-                margin-left: 0;
-            }
-        }
-    </style>
+    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/dashboard.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-
 <body>
+    <!-- Sidebar -->
+    <div class="lms-sidebar-container">
+        <?php include __DIR__ . '/../inc/sidebar.php'; ?>
+    </div>
 
-    <?php include __DIR__ . '/../inc/sidebar.php'; ?>
+    <!-- Main Content -->
+    <div class="main-content-wrapper">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1>Welcome Back, <?= htmlspecialchars($_SESSION['user']['fname'] ?? 'User') ?>!</h1>
+            <p>Track your learning progress and stay updated with announcements</p>
+        </div>
 
-    <div class="main">
-        <h3>All Courses</h3>
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+            <h3><i class="fas fa-graduation-cap me-2"></i>Your Learning Journey</h3>
+            <p>You have <?= $counter['ongoing'] ?> ongoing courses and <?= $counter['completed'] ?> completed courses. Keep up the great work!</p>
+        </div>
 
-        <!-- Counters -->
-        <div class="row my-4 g-3">
-            <div class="col-md-4">
-                <div class="counter-card bg-ongoing">
-                    <h3><?= $counter['ongoing'] ?></h3>
-                    <p>Ongoing Courses</p>
-                </div>
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card stat-card-ongoing" onclick="window.location.href='<?= BASE_URL ?>/public/my_courses.php'">
+                <div class="stat-number"><?= $counter['ongoing'] ?></div>
+                <div class="stat-label">Ongoing Courses</div>
             </div>
-            <div class="col-md-4">
-                <div class="counter-card bg-completed">
-                    <h3><?= $counter['completed'] ?></h3>
-                    <p>Completed Courses</p>
-                </div>
+            
+            <div class="stat-card stat-card-completed" onclick="window.location.href='<?= BASE_URL ?>/public/my_courses.php'">
+                <div class="stat-number"><?= $counter['completed'] ?></div>
+                <div class="stat-label">Completed Courses</div>
             </div>
-            <div class="col-md-4">
-                <div class="counter-card bg-not-enrolled">
-                    <h3><?= $counter['not_enrolled'] ?></h3>
-                    <p>Not Enrolled</p>
-                </div>
+            
+            <div class="stat-card stat-card-notenrolled" onclick="window.location.href='<?= BASE_URL ?>/public/courses.php'">
+                <div class="stat-number"><?= $counter['not_enrolled'] ?></div>
+                <div class="stat-label">Available Courses</div>
             </div>
         </div>
 
-        <!-- Courses -->
-<div class="row row-cols-1 row-cols-md-4 g-4 mt-3">
-<?php foreach ($courses as $c):
-    $totalDuration = 0;
-        if ($c['file_pdf']) $totalDuration += 60;  // 1 min PDF
-        if ($c['file_video']) $totalDuration += 300; // 5 min video
-
-        $secondsSpent = isset($c['progress']) ? (int)$c['progress'] : 0;
-
-        // Calculate percentage
-        if ($totalDuration > 0) {
-            $progressPercent = min(100, round(($secondsSpent / $totalDuration) * 100));
-        } else {
-            $progressPercent = 0;
-        }
-    $completedAt = $c['completed_at'] ?? null;
-    $startedAt = $c['started_at'] ?? null;
-    $totalTime = $c['total_time_seconds'] ?? 0;
-    $courseUrl = BASE_URL . "/public/course_view.php?id={$c['id']}";
-
-    // Convert total time seconds to H:i format
-   $secondsSpent = isset($c['progress']) ? (int)$c['progress'] : 0;
-
-    $days = floor($secondsSpent / 86400); // 1 day = 86400 sec
-    $hours = floor(($secondsSpent % 86400) / 3600);
-    $minutes = floor(($secondsSpent % 3600) / 60);
-    $seconds = $secondsSpent % 60;
-
-    $formattedTime = '';
-    if($days > 0) $formattedTime .= $days . 'd ';
-    if($hours > 0 || $days > 0) $formattedTime .= $hours . 'h ';
-    if($minutes > 0 || $hours > 0 || $days > 0) $formattedTime .= $minutes . 'm ';
-    $formattedTime .= $seconds . 's';
-
-?>
-    <div class="col">
-        <a href="<?= $courseUrl ?>" style="text-decoration:none; color:inherit;">
-            <div class="card shadow-sm h-100">
-                <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'placeholder.png') ?>" class="card-img-top" alt="Course Image">
-                <div class="card-body d-flex flex-column">
-                    <h6 class="mb-2">
-                        <?= htmlspecialchars($c['title']) ?>
-                        <?php if ($c['enroll_status'] === 'ongoing'): ?>
-                            <span class="badge bg-warning">Ongoing</span>
-                        <?php elseif ($c['enroll_status'] === 'completed'): ?>
-                            <span class="badge bg-success">Completed</span>
-                        <?php else: ?>
-                            <span class="badge bg-primary">Not Enrolled</span>
-                        <?php endif; ?>
-                    </h6>
-                            <small class="text-muted d-block">Total time: <?= $formattedTime ?></small>
-
-                    <?php if ($c['enroll_status'] && $c['enroll_status'] !== 'expired'): ?>
-                        <!-- Progress bar -->
-                        <div class="progress mb-1" style="height:15px;">
-                            <div class="progress-bar" role="progressbar" style="width: <?= $progressPercent ?>%; font-weight:bold; font-size:0.9rem;" aria-valuenow="<?= $progressPercent ?>" aria-valuemin="0" aria-valuemax="100">
-                                <?= $progressPercent ?>%
-                            </div>
-                        </div>
-
-                        <!-- Timestamps -->
-                        <?php if ($startedAt): ?>
-                            <small class="text-muted d-block">Started: <?= date('M d, Y H:i', strtotime($startedAt)) ?></small>
-                        <?php endif; ?>
-                        <?php if ($c['enroll_status'] === 'completed' && $completedAt): ?>
-                            <small class="text-muted d-block">Completed: <?= date('M d, Y H:i', strtotime($completedAt)) ?></small>
-                        <?php endif; ?>
-                        <?php if ($totalTime): ?>
-                            <small class="text-muted d-block">Total time: <?= $formattedTime ?></small>
-                        <?php endif; ?>
+        <!-- News & Courses Section -->
+        <div class="content-section">
+            <!-- News Section -->
+            <div class="news-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-newspaper me-2"></i>News & Announcements</h3>
+                    <?php if(is_admin()): ?>
+                        <a href="<?= BASE_URL ?>/admin/news_crud.php">View All</a>
                     <?php endif; ?>
                 </div>
+                
+                <?php if (!empty($news)): ?>
+                    <?php foreach ($news as $item): ?>
+                        <div class="news-item">
+                            <h5><?= htmlspecialchars($item['title']) ?></h5>
+                            <p><?= htmlspecialchars(substr($item['content'], 0, 100)) ?>...</p>
+                            <div class="news-meta">
+                                <span><i class="fas fa-calendar-alt me-1"></i> <?= date('M d, Y', strtotime($item['created_at'])) ?></span>
+                                <span><i class="fas fa-user me-1"></i> <?= htmlspecialchars($item['author']) ?></span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <i class="fas fa-newspaper"></i>
+                        <h4>No announcements yet</h4>
+                        <p>Check back later for updates</p>
+                    </div>
+                <?php endif; ?>
             </div>
-        </a>
-    </div>
-<?php endforeach; ?>
-</div>
 
+            <!-- Recent Courses Section -->
+            <div class="courses-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-book me-2"></i>Recent Courses</h3>
+                </div>
+                
+                <?php if (!empty($courses)): ?>
+                    <div class="course-grid">
+                        <?php 
+                        $recentCourses = array_slice($courses, 0, 4);
+                        foreach ($recentCourses as $c): 
+                            $progressPercent = 0;
+                            if ($c['enroll_status'] && $c['progress'] && ($c['file_pdf'] || $c['file_video'])) {
+                                $totalDuration = 0;
+                                if ($c['file_pdf']) $totalDuration += 60;
+                                if ($c['file_video']) $totalDuration += 300;
+                                if ($totalDuration > 0) {
+                                    $progressPercent = min(100, round(($c['progress'] / $totalDuration) * 100));
+                                }
+                            }
+                            $courseUrl = BASE_URL . "/public/course_view.php?id={$c['id']}";
+                        ?>
+                            <a href="<?= $courseUrl ?>" class="course-card-link">
+                                <div class="course-card">
+                                    <div class="course-card-img">
+                                        <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'placeholder.png') ?>" alt="Course Image">
+                                    </div>
+                                    <div class="course-card-body">
+                                        <div class="course-card-title">
+                                            <h6><?= htmlspecialchars($c['title']) ?></h6>
+                                            <span class="course-badge <?= $c['enroll_status'] ? 'badge-' . $c['enroll_status'] : 'badge-notenrolled' ?>">
+                                                <?= $c['enroll_status'] ? ucfirst($c['enroll_status']) : 'Not Enrolled' ?>
+                                            </span>
+                                        </div>
+                                        <p><?= htmlspecialchars(substr($c['description'], 0, 80)) ?>...</p>
+                                        
+                                        <?php if ($c['enroll_status'] && $c['enroll_status'] === 'ongoing'): ?>
+                                            <div class="course-progress">
+                                                <div class="progress">
+                                                    <div class="progress-bar" style="width: <?= $progressPercent ?>%; background: linear-gradient(90deg, #ffc107, #ffd54f);"></div>
+                                                </div>
+                                                <div class="progress-percent"><?= $progressPercent ?>% Complete</div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="<?= BASE_URL ?>/public/courses.php" class="view-all-btn">
+                            <i class="fas fa-eye"></i> View All Courses
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <i class="fas fa-book-open"></i>
+                        <h4>No courses available</h4>
+                        <p>Check back later for new courses</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simple animation for cards on scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.stat-card, .course-card, .news-item');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
 </body>
-
 </html>

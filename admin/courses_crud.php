@@ -16,10 +16,17 @@ $id  = isset($_GET['id']) ? (int)$_GET['id'] : null;
  * Calculate expiration date
  */
 function calculateExpiry($expires_at, $valid_days) {
+<<<<<<< HEAD
     if (!empty($valid_days)) {
         return date('Y-m-d', strtotime("+{$valid_days} days"));
     }
     return $expires_at ?: null;
+=======
+    if (!empty($valid_days) && is_numeric($valid_days)) {
+        return date('Y-m-d', strtotime('+' . (int)$valid_days . ' days'));
+    }
+    return !empty($expires_at) ? $expires_at : null;
+>>>>>>> 16bfdb0ceabc0af5016defc97e45da3453397e54
 }
 
 /**
@@ -62,6 +69,7 @@ if ($act === 'addform' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     ");
 
     $stmt->execute([
+<<<<<<< HEAD
         ':title'         => $_POST['title'],
         ':description'   => $_POST['description'],
         ':thumbnail'     => uploadFile('thumbnail', 'images', ['jpg','jpeg','png','webp']),
@@ -69,6 +77,15 @@ if ($act === 'addform' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         ':video'         => uploadFile('file_video', 'video', ['mp4','webm']),
         ':proponent_id'  => $_SESSION['user']['id'],
         ':expires_at'    => $expires_at
+=======
+        ':title'        => $_POST['title'],
+        ':description'  => $_POST['description'],
+        ':thumbnail'    => uploadFile('thumbnail', 'images', ['jpg','jpeg','png','webp']),
+        ':pdf'          => uploadFile('file_pdf', 'pdf', ['pdf']),
+        ':video'        => uploadFile('file_video', 'video', ['mp4','webm']),
+        ':proponent_id' => $_SESSION['user']['id'],
+        ':expires_at'   => $expires_at
+>>>>>>> 16bfdb0ceabc0af5016defc97e45da3453397e54
     ]);
 
     header('Location: courses_crud.php');
@@ -147,91 +164,148 @@ $courses = $pdo->query("
 <meta charset="utf-8">
 <title>Courses CRUD</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-body { background: #f8f9fa; }
-.main { padding: 30px; }
-.card img { height: 180px; object-fit: cover; }
-.card-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-</style>
+<link href="<?= BASE_URL ?>/assets/css/course.css" rel="stylesheet">
 </head>
 <body>
-<?php include __DIR__ . '/../inc/sidebar.php'; ?>
-<div class="main container">
+
+<div class="lms-sidebar-container">
+    <?php include __DIR__ . '/../inc/sidebar.php'; ?>
+</div>
+
+<div class="modern-courses-wrapper">
 <h3 class="mb-4">Courses Management</h3>
 
 <?php if ($act === 'addform' || $act === 'edit'): ?>
 <?php $editing = ($act === 'edit'); ?>
+
 <div class="card p-4 mb-4 shadow-sm bg-white rounded">
-<form method="post" enctype="multipart/form-data" action="">
-    <div class="mb-3"><input name="title" class="form-control" placeholder="Title" required value="<?= $editing ? htmlspecialchars($course['title']) : '' ?>"></div>
-    <div class="mb-3"><textarea name="description" class="form-control" placeholder="Description" rows="4" required><?= $editing ? htmlspecialchars($course['description']) : '' ?></textarea></div>
-    <div class="row">
-    <div class="col-md-6 mb-3">
-        <label>Expiration Date</label>
-        <input type="date" name="expires_at" class="form-control"
-               value="<?= $editing && $course['expires_at'] ? $course['expires_at'] : '' ?>">
+<form method="post" enctype="multipart/form-data">
+
+    <div class="mb-3">
+        <input name="title" class="form-control" placeholder="Title" required
+               value="<?= $editing ? htmlspecialchars($course['title']) : '' ?>">
     </div>
 
-    <div class="col-md-6 mb-3">
-        <label>Validity (Days)</label>
-        <input type="number" name="valid_days" class="form-control"
-               placeholder="Example: 5">
-        <small class="text-muted">Auto-calculate expiration</small>
-    </div>
-    </div>
     <div class="mb-3">
-        <label>Thumbnail</label> <input type="file" name="thumbnail" class="form-control">
-        <?php if($editing && $course['thumbnail']): ?>
+        <textarea name="description" class="form-control" rows="4" required
+                  placeholder="Description"><?= $editing ? htmlspecialchars($course['description']) : '' ?></textarea>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label>Expiration Date</label>
+            <input type="date" name="expires_at" id="expires_at" class="form-control"
+                   value="<?= $editing && $course['expires_at'] ? $course['expires_at'] : '' ?>">
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label>Validity (Days)</label>
+            <input type="number" name="valid_days" id="valid_days" class="form-control"
+                   placeholder="Example: 5"
+                   value="<?= ($editing && !empty($course['expires_at']))
+                       ? max(0, (int) ceil((strtotime($course['expires_at']) - time()) / 86400))
+                       : '' ?>">
+            <small class="text-muted">Auto-calculated when date is selected</small>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Thumbnail</label>
+        <input type="file" name="thumbnail" class="form-control">
+        <?php if ($editing && $course['thumbnail']): ?>
             <img src="<?= BASE_URL ?>/uploads/images/<?= $course['thumbnail'] ?>" width="120" class="mt-2">
         <?php endif; ?>
     </div>
 
     <div class="mb-3">
-        <label>PDF</label> <input type="file" name="file_pdf" class="form-control">
-        <?php if($editing && $course['file_pdf']): ?>
-            <a href="<?= BASE_URL ?>/uploads/pdf/<?= $course['file_pdf'] ?>" target="_blank" class="d-block mt-1">View PDF</a>
+        <label>PDF</label>
+        <input type="file" name="file_pdf" class="form-control">
+        <?php if ($editing && $course['file_pdf']): ?>
+            <a href="<?= BASE_URL ?>/uploads/pdf/<?= $course['file_pdf'] ?>" target="_blank">View PDF</a>
         <?php endif; ?>
     </div>
 
     <div class="mb-3">
-        <label>Video</label> <input type="file" name="file_video" class="form-control">
-        <?php if($editing && $course['file_video']): ?>
-            <a href="<?= BASE_URL ?>/uploads/video/<?= $course['file_video'] ?>" target="_blank" class="d-block mt-1">View Video</a>
+        <label>Video</label>
+        <input type="file" name="file_video" class="form-control">
+        <?php if ($editing && $course['file_video']): ?>
+            <a href="<?= BASE_URL ?>/uploads/video/<?= $course['file_video'] ?>" target="_blank">View Video</a>
         <?php endif; ?>
     </div>
 
     <button class="btn btn-primary"><?= $editing ? 'Update Course' : 'Add Course' ?></button>
-    <a href="courses_crud.php" class="btn btn-secondary ms-2">Back to List</a>
+    <a href="courses_crud.php" class="btn btn-secondary ms-2">Back</a>
 </form>
 </div>
 
 <?php else: ?>
-<p><a href="?act=addform" class="btn btn-success mb-3">Add New Course</a></p>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
-<?php foreach ($courses as $c): ?>
-<div class="col">
-    <div class="card h-100 shadow-sm bg-white rounded">
-        <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'placeholder.png') ?>" class="card-img-top" alt="Course Thumbnail">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title"><?= htmlspecialchars($c['title']) ?></h5>
-            <p class="card-text"><?= htmlspecialchars(substr($c['description'],0,100)) ?>...</p>
-            <div class="card-actions mt-auto">
-                <?php if (is_admin() || $c['proponent_id'] == $_SESSION['user']['id']): ?>
-                    <a href="?act=edit&id=<?= $c['id'] ?>" class="btn btn-sm btn-warning flex-fill">Edit</a>
-                <?php endif; ?>
-                <?php if (is_admin()): ?>
-                    <a href="?act=delete&id=<?= $c['id'] ?>" onclick="return confirm('Delete this course?')" class="btn btn-sm btn-danger flex-fill">Delete</a>
-                <?php endif; ?>
+<a href="?act=addform" class="btn btn-success mb-3">Add New Course</a>
+
+<div class="modern-courses-grid">
+    <?php foreach ($courses as $c): ?>
+        <div class="modern-course-card">
+            <div class="modern-card-img">
+                <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'placeholder.png') ?>" alt="Course Image">
             </div>
+        <div class="modern-card-body">
+            <div class="modern-card-title">
+                <div class="modern-card-title">
+                    <h6><?= htmlspecialchars($c['title']) ?></h6>
+                </div>
+            </div>
+        <p><?= htmlspecialchars(substr($c['description'], 0, 100)) ?>...</p>
+            <div class="modern-course-info">
+                <?php
+                $startDate = date('M, d, Y', strtotime($c['created_at']));
+                $expiryDate = $c['expires_at']
+                    ? date('M, d, Y', strtotime($c['expires_at']))
+                    : 'No expiry';
+                ?>
+            <p><strong>Start:</strong> <span><?= $startDate ?></span></p>
+            <p><strong>Expires:</strong> <span><?= $expiryDate ?></span></p>
+            </div>
+        <div class="modern-card-actions">
+            <a href="?act=edit&id=<?= $c['id'] ?>" class="modern-btn-warning modern-btn-sm">Edit</a>
+                <?php if (is_admin()): ?>
+                    <a href="?act=delete&id=<?= $c['id'] ?>" class="modern-btn-danger modern-btn-sm"
+                       onclick="return confirm('Delete this course?')">Delete</a>
+                <?php endif; ?>
+        </div>  
         </div>
-    </div>
+        </div>
+    <?php endforeach; ?>
 </div>
-<?php endforeach; ?>
-</div>
-<?php endif; ?>
 
+<?php endif; ?>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const expires = document.getElementById('expires_at');
+    const days = document.getElementById('valid_days');
+
+    if (!expires || !days) return;
+
+    expires.addEventListener('change', function () {
+        if (!this.value) {
+            days.value = '';
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        const exp = new Date(this.value);
+        exp.setHours(0,0,0,0);
+
+        const diff = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
+        days.value = diff >= 0 ? diff : 0;
+    });
+});
+</script>
+
 </body>
 </html>

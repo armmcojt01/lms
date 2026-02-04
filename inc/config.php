@@ -26,4 +26,25 @@ define('BASE_URL', $protocol . $_SERVER['HTTP_HOST'] . '/lms');
 
 // Include functions
 require_once __DIR__ . '/functions.php';
+//function checkAndUpdateSchema($pdo) {
+   // try {
+        // Check if columns exist
+     //   $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'is_verified'");
+      //  if (!$stmt->fetch()) {
+            // Add missing columns
+    //        $pdo->exec("ALTER TABLE users 
+                 //      ADD COLUMN is_verified TINYINT(1) DEFAULT 0,
+                  //     ADD COLUMN otp_code VARCHAR(6),
+                   //    ADD COLUMN otp_expires_at DATETIME");
+     //   }
+  //  } catch (PDOException $e) {
+        // Table might not exist or error, we'll handle it later
+ //   }
+//}
+
+// Run schema check
+//checkAndUpdateSchema($pdo);
 ?>
+
+
+
