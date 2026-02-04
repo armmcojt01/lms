@@ -119,6 +119,7 @@ function get_role_display_name($role) {
                 <div class="stat-number"><?= $userStats['total_courses'] ?? 0 ?></div>
                 <div class="stat-label">Total Courses</div>
             </div>
+            
             <div class="stat-card">
                 <div class="stat-number"><?= $userStats['completed'] ?? 0 ?></div>
                 <div class="stat-label">Completed</div>
