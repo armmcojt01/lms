@@ -1,10 +1,17 @@
 <?php
+
+
+// gumaganato
 require 'vendor/autoload.php'; // Path to autoload.php
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 $mail = new PHPMailer(true);
+
+//otp generator
+    $otp_code= str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $expiry = date("Y-m-d H:i:s", strtotime("+10 minutes"));
 
 try {
     // Server settings
@@ -28,9 +35,9 @@ try {
     // Content
     $mail->isHTML(true); // Set email format to HTML
     $mail->Subject = 'Test Email Subject';
-    $mail->Body    = '<h1>Hello!</h1><p>This is an HTML email body.</p>';
-    $mail->AltBody = 'This is the plain text version for non-HTML mail clients';
-    
+    $mail->Body    = '<h1>OTP: ' . $otp_code . '</h1>';
+   $mail->AltBody = "\nOTP: " . $otp_code;
+
     // Attachments (optional)
     // $mail->addAttachment('/path/to/file.pdf', 'filename.pdf');
     
@@ -41,4 +48,5 @@ try {
 } catch (Exception $e) {
     echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
 }
+
 ?>

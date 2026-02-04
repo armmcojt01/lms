@@ -16,17 +16,10 @@ $id  = isset($_GET['id']) ? (int)$_GET['id'] : null;
  * Calculate expiration date
  */
 function calculateExpiry($expires_at, $valid_days) {
-<<<<<<< HEAD
     if (!empty($valid_days)) {
         return date('Y-m-d', strtotime("+{$valid_days} days"));
     }
     return $expires_at ?: null;
-=======
-    if (!empty($valid_days) && is_numeric($valid_days)) {
-        return date('Y-m-d', strtotime('+' . (int)$valid_days . ' days'));
-    }
-    return !empty($expires_at) ? $expires_at : null;
->>>>>>> 16bfdb0ceabc0af5016defc97e45da3453397e54
 }
 
 /**
@@ -69,7 +62,6 @@ if ($act === 'addform' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     ");
 
     $stmt->execute([
-<<<<<<< HEAD
         ':title'         => $_POST['title'],
         ':description'   => $_POST['description'],
         ':thumbnail'     => uploadFile('thumbnail', 'images', ['jpg','jpeg','png','webp']),
@@ -77,15 +69,6 @@ if ($act === 'addform' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         ':video'         => uploadFile('file_video', 'video', ['mp4','webm']),
         ':proponent_id'  => $_SESSION['user']['id'],
         ':expires_at'    => $expires_at
-=======
-        ':title'        => $_POST['title'],
-        ':description'  => $_POST['description'],
-        ':thumbnail'    => uploadFile('thumbnail', 'images', ['jpg','jpeg','png','webp']),
-        ':pdf'          => uploadFile('file_pdf', 'pdf', ['pdf']),
-        ':video'        => uploadFile('file_video', 'video', ['mp4','webm']),
-        ':proponent_id' => $_SESSION['user']['id'],
-        ':expires_at'   => $expires_at
->>>>>>> 16bfdb0ceabc0af5016defc97e45da3453397e54
     ]);
 
     header('Location: courses_crud.php');
