@@ -7,6 +7,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     $fname = $_POST['fname'] ?? '';
     $lname = $_POST['lname'] ?? '';
     $email = $_POST['email'] ?? '';
+    $otp_code = $_POST['otp_code'] ?? '';
     if(!$username || !$password){ $err='Username and password required'; }
     else {
         // check exists
@@ -15,11 +16,21 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
         if($stmt->fetch()){ $err='Username or email already exists'; }
         else {
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare('INSERT INTO users (username,password,fname,lname,email,role,created_at) VALUES (?,?,?,?,?,"user",NOW())');
-            $stmt->execute([$username,$hash,$fname,$lname,$email]);
+            $stmt = $pdo->prepare('INSERT INTO users (username,password,fname,otp_code,lname,email,role,created_at) VALUES (?,?,?,?,?,?,"user",NOW())');
+            $stmt->execute([$username,$hash,$fname,$otp_code,$lname,$email]);
             $success = 'Registered successfully. You may login.';
         }
-    }
+        //otp insert
+        $stmt = $pdo->prepare('SELECT otp_code FROM otp_code WHERE otp_code = ?');
+        $stmt->execute([$otp_code]);
+        if($stmt->fetch()){ $err='OTP code already exists'; }
+        else {
+            $stmt = $pdo->prepare('INSERT INTO otp_code (otp_code, otp_expired_at) VALUES (?, ?)');
+            $stmt->execute([$otp_code, $otp_expired_at]);
+        }
+
+
+}
 }
 ?>
 <!DOCTYPE html>
@@ -38,7 +49,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             <p>Join us by creating your free account</p>
         </div>
         
-        <form class="login-form" method="POST" action="">
+        <form class="login-form" method="POST" action="simple_mail.php">
             <?php if($err): ?>
                 <div class="error-message">
                     <i class="fas fa-exclamation-circle"></i>
@@ -52,6 +63,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                     <span><?= htmlspecialchars($success) ?></span>
                 </div>
             <?php endif; ?>
+
+               <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
+            <div class="success">
+                Thank you! Your message has been sent successfully.
+            </div>
+        <?php endif; ?>
             
             <div class="form-row">
                 <div class="form-group half">
@@ -75,16 +92,48 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
                 </div>
             </div>
             
+           <div class="form-group">
+    <label for="email">Email Address</label>
+    <div class="input-with-icon">
+        <i class="fas fa-envelope"></i>
+        <input type="email" id="email" name="email" class="form-control" 
+               placeholder="Enter your email"
+               value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>">
+        <button type="button" action= class="verify-email-btn" id="verifyEmailBtn">
+            <i class="fas fa-check-circle"></i> Verify Email
+        </button>
+         <button class="vryfybtn" action= "email_process.php" type="POST">verify button ghhj
+        </button>
+    </div>
+</div>
+
+<!-- i20 na -->
+     
+        
+       
             <div class="form-group">
-                <label for="email">Email Address</label>
-                <div class="input-with-icon">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" id="email" name="email" class="form-control" 
-                           placeholder="Enter your email"
-                           value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>">
-                </div>
+                <label for="name">Name:</label>
+             
+                <button action= "simple_mail.php" type="submit">Verify</button>
             </div>
-            
+<!-- ======= -->
+<!-- Security Code Input (Hidden by default) -->
+<div class="form-group" id="securityCodeGroup" style="display: none;">
+    <label for="security_code">
+        <i class="fas fa-shield-alt"></i> Security Code
+        <span id="countdown" style="color: #ff6b6b; font-weight: bold; margin-left: 10px;"></span>
+    </label>
+    <div class="input-with-icon">
+        <i class="fas fa-key"></i>
+        <input type="text" id="security_code" name="security_code" class="form-control" 
+               placeholder="Enter the 6-digit code sent to your email" maxlength="6">
+        <button type="button" class="resend-code-btn" id="resendCodeBtn">
+            <i class="fas fa-redo"></i> Resend
+        </button>
+    </div>
+    <small class="form-text text-muted" id="codeStatus"></small>
+</div>
+
             <div class="form-group">
                 <label for="username">Username *</label>
                 <div class="input-with-icon">
