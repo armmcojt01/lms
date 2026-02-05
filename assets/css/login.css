@@ -70,13 +70,22 @@
         
         .input-with-icon i {
             position: absolute;
-            left: 18px;
+            left: 25px;
             top: 50%;
             transform: translateY(-50%);
             color: #3498db;
             font-size: 20px;
         }
         
+        .input-with-icon i.fas.fa-envelope-circle-check {
+            position: absolute;
+            left: 20px;
+            top: 24%;
+            transform: translateY(-50%);
+            color: #3498db;
+            font-size: 20px;
+        }
+
         .form-control {
             width: 100%;
             padding: 16px 16px 16px 55px;
@@ -350,3 +359,28 @@
     width: 100%;
     max-width: 480px; /* Slightly larger for register */
 }
+
+ /* Verify Button */
+        .verify-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-left: 300px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+            border: none;
+        }
+
+        .verify-btn:hover {
+            background: linear-gradient(135deg, #0da271 0%, #047852 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+        }

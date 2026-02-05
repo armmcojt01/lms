@@ -41,6 +41,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
     <title>Register - Create Account</title>
     <link href="<?= BASE_URL ?>/assets/css/login.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
 </head>
 <body>
     <div class="login-container">
@@ -95,26 +96,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
            <div class="form-group">
     <label for="email">Email Address</label>
     <div class="input-with-icon">
-        <i class="fas fa-envelope"></i>
+        <i class="fas fa-at"></i>
         <input type="email" id="email" name="email" class="form-control" 
                placeholder="Enter your email"
                value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>">
-        <button type="button" action= class="verify-email-btn" id="verifyEmailBtn">
-            <i class="fas fa-check-circle"></i> Verify Email
-        </button>
-         <button class="vryfybtn" action= "email_process.php" type="POST">verify button ghhj
-        </button>
-    </div>
 </div>
-
-<!-- i20 na -->
-     
-        
-       
-            <div class="form-group">
-                <label for="name">Name:</label>
              
-                <button action= "simple_mail.php" type="submit">Verify</button>
+                
             </div>
 <!-- ======= -->
 <!-- Security Code Input (Hidden by default) -->
@@ -137,7 +125,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
             <div class="form-group">
                 <label for="username">Username *</label>
                 <div class="input-with-icon">
-                    <i class="fas fa-at"></i>
+                    <i class="fas fa-user"></i>
                     <input type="text" id="username" name="username" class="form-control" 
                            placeholder="Choose a username" required
                            value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>">
