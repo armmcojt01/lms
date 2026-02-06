@@ -10,10 +10,24 @@ $isProponent = is_proponent();
 
 // Fetch all courses with enrollment info
 $stmt = $pdo->prepare("
-    SELECT c.id, c.title, c.description, c.thumbnail,
-           c.created_at, c.expires_at,
-           e.status AS enroll_status, e.progress, e.total_time_seconds,
-           c.proponent_id
+    SELECT 
+        c.id, 
+        c.title, 
+        c.description, 
+        c.thumbnail,
+        c.created_at, 
+        c.expires_at,
+        e.status AS enroll_status,
+        e.expires_at AS enrollment_expires_at,  -- Get enrollment expiration
+        e.progress, 
+        e.total_time_seconds,
+        c.proponent_id,
+        -- Determine display status
+        CASE 
+            WHEN e.id IS NULL THEN 'notenrolled'
+            WHEN e.status = 'ongoing' AND e.expires_at IS NOT NULL AND e.expires_at < NOW() THEN 'expired'
+            ELSE e.status
+        END AS display_status
     FROM courses c
     LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
     WHERE c.is_active = 1
@@ -52,21 +66,22 @@ if (!empty($c['expires_at'])) {
             <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'placeholder.png') ?>" alt="Course Image">
         </div>
 
-        <div class="modern-card-body">
-            <div class="modern-card-title">
-                <h6><?= htmlspecialchars($c['title']) ?></h6>
-                <?php if ($c['enroll_status']): ?>
-                    <?php if ($c['enroll_status'] === 'ongoing'): ?>
-                        <span class="modern-badge badge-ongoing">Ongoing</span>
-                    <?php elseif ($c['enroll_status'] === 'completed'): ?>
-                        <span class="modern-badge badge-completed">Completed</span>
-                    <?php elseif ($c['enroll_status'] === 'expired'): ?>
-                        <span class="modern-badge badge-expired">Expired</span>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <span class="modern-badge badge-notenrolled">Not Enrolled</span>
-                <?php endif; ?>
-            </div>
+<div class="modern-card-body">
+    <div class="modern-card-title">
+        <h6><?= htmlspecialchars($c['title']) ?></h6>
+        <?php if ($c['display_status'] === 'ongoing'): ?>
+            <span class="modern-badge badge-ongoing">Ongoing</span>
+        <?php elseif ($c['display_status'] === 'completed'): ?>
+            <span class="modern-badge badge-completed">Completed</span>
+
+
+        <?php elseif ($c['display_status'] === 'expired'): ?>
+            <span class="modern-badge badge-expired">Expired</span>
+            
+         <?php elseif ($c['display_status'] === 'notenrolled'): ?>
+            <span class="modern-badge badge-notenrolled">Not Enrolledsssss</span>
+        <?php endif; ?>
+    </div>
             
             <p><?= htmlspecialchars(substr($c['description'], 0, 120)) ?>...</p>
             
@@ -106,7 +121,7 @@ if (!empty($c['expires_at'])) {
                     <a href="#"
                        class="modern-btn-sm modern-btn-secondary"
                        onclick="return confirm('This course is already expired. You can no longer enroll or continue.');">
-                        Enroll
+                        Expired
                     </a>
                 <?php else: ?>
                     <a href="<?= BASE_URL ?>/public/course_view.php?id=<?= $c['id'] ?>"
