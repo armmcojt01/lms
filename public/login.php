@@ -1,7 +1,7 @@
 <?php
 // In your login.php authentication logic
 require_once __DIR__ . '/../inc/config.php';
-session_start();
+// session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
