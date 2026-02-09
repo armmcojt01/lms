@@ -148,6 +148,7 @@ $courses = $pdo->query("
 <title>Courses CRUD</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="<?= BASE_URL ?>/assets/css/course.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
 </head>
 <body>
 
@@ -249,6 +250,7 @@ $courses = $pdo->query("
             <p><strong>Expires:</strong> <span><?= $expiryDate ?></span></p>
             </div>
         <div class="modern-card-actions">
+            <a href="<?= BASE_URL ?>/public/course_view.php?id=<?= $c['id'] ?>" class="modern-btn-primary modern-btn-sm">View</a>
             <a href="?act=edit&id=<?= $c['id'] ?>" class="modern-btn-warning modern-btn-sm">Edit</a>
                 <?php if (is_admin()): ?>
                     <a href="?act=delete&id=<?= $c['id'] ?>" class="modern-btn-danger modern-btn-sm"
