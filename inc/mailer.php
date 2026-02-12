@@ -48,7 +48,7 @@ function sendOTPEmail($recipientEmail, $recipientName, $otpCode) {
                 <p>Thank you for registering. Use the OTP below to verify your email address:</p>
                 
                 <div class="otp-code">' . $otpCode . '</div>
-                
+                <p>PLS CONTACT THE ADMIN FOR ACTIVATION OF ACCOUNT </p>
                 <p>This OTP is valid for 10 minutes.</p>
                 <p>If you didn\'t request this, please ignore this email.</p>
                 

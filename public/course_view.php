@@ -60,12 +60,11 @@ if (is_student()) {
     }
 }
 
-
 // Handle AJAX time tracking
 if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['seconds']) && is_student()) {
     $seconds = intval($_POST['seconds']);
     $total_seconds = $enrollment['total_time_seconds'] + $seconds;
-    $progress = $total_seconds; // adjust formula if needed
+    $progress = $total_seconds;
     $stmt = $pdo->prepare('UPDATE enrollments SET total_time_seconds=?, progress=? WHERE id=?');
     $stmt->execute([$total_seconds, $progress, $enrollment['id']]);
     echo json_encode(['success'=>true]);
@@ -85,40 +84,202 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && 
     exit;
 }
 
+// ============================================
+// FETCH ENROLLED STUDENTS - FOR ADMIN/PROPONENT
+// ============================================
 
-//list all studen enrolled in course
+// 1. ALL enrolled students (ongoing + completed)
 $stmt = $pdo->prepare('
-    SELECT u.id, u.fname, u.lname 
-    FROM enrollments e 
+    SELECT 
+        u.id, 
+        u.fname, 
+        u.lname, 
+        u.email,
+        u.username,
+        e.status,
+        e.progress,
+        e.total_time_seconds,
+        e.enrolled_at,
+        e.completed_at,
+        DATE_FORMAT(e.enrolled_at, "%M %d, %Y") as enrolled_date,
+        DATE_FORMAT(e.completed_at, "%M %d, %Y") as completed_date,
+        CASE 
+            WHEN e.status = "completed" THEN "bg-success"
+            WHEN e.status = "ongoing" THEN "bg-warning"
+            ELSE "bg-secondary"
+        END as status_color,
+        CASE 
+            WHEN e.status = "completed" THEN "Completed"
+            WHEN e.status = "ongoing" THEN "Ongoing"
+            ELSE "Not Started"
+        END as status_text
+    FROM enrollments e
     JOIN users u ON e.user_id = u.id 
-    WHERE e.course_id = ? AND e.status = "completed" 
+    WHERE e.course_id = ?
+    ORDER BY 
+        CASE e.status 
+            WHEN "ongoing" THEN 1 
+            WHEN "completed" THEN 2 
+            ELSE 3 
+        END,
+        e.enrolled_at DESC
 ');
 $stmt->execute([$courseId]);
 $enrolledStudents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-//list of users
-$stmt = $pdo->prepare('SELECT id, fname, lname FROM users');
-// $stmt->execute($users);
-$users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-//lif of users who is enrolled to this course
-$stmt = $pdo->prepare('SELECT u.id, u.fname, u.lname 
-FROM enrollments e
-JOIN users u ON e.user_id = u.id 
-WHERE e.course_id = ?');
+// 2. Count statistics
+$stmt = $pdo->prepare('
+    SELECT 
+        COUNT(*) as total_enrolled,
+        SUM(CASE WHEN status = "ongoing" THEN 1 ELSE 0 END) as ongoing_count,
+        SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed_count
+    FROM enrollments 
+    WHERE course_id = ?
+');
 $stmt->execute([$courseId]);
-$enrolledUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// 3. Completion rate
+$completionRate = 0;
+if ($stats['total_enrolled'] > 0) {
+    $completionRate = round(($stats['completed_count'] / $stats['total_enrolled']) * 100);
+}
+
+//4 rpt
+if (isset($_GET['export']) && $_GET['export'] == 'csv' && (is_admin() || is_proponent())) {
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="enrolled_students_course_' . $courseId . '.csv"');
+    
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Student Name', 'Email', 'Username', 'Status', 'Enrolled Date', 'Completed Date', 'Progress (%)', 'Time Spent (mins)']);
+    
+    foreach ($enrolledStudents as $student) {
+        $timeMinutes = round($student['total_time_seconds'] / 60, 1);
+        fputcsv($output, [
+            $student['fname'] . ' ' . $student['lname'],
+            $student['email'],
+            $student['username'],
+            $student['status_text'],
+            $student['enrolled_date'],
+            $student['completed_date'] ?? 'N/A',
+            $student['progress'] . '%',
+            $timeMinutes
+        ]);
+    }
+    fclose($output);
+    exit;
+}
 ?>
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?=htmlspecialchars($course['title'])?> - LMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/assets/css/sidebar.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .students-section {
+            margin-top: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        
+        .students-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 24px;
+        }
+        
+        .students-stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 10px;
+        }
+        
+        .stat-item {
+            background: rgba(255,255,255,0.15);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+        }
+        
+        .stat-item i {
+            margin-right: 8px;
+        }
+        
+        .students-table-container {
+            padding: 20px;
+        }
+        
+        .student-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .progress-mini {
+            width: 100px;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin-top: 5px;
+        }
+        
+        .progress-mini-bar {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #dee2e6;
+        }
+        
+        .export-btn {
+            background: white;
+            color: #667eea;
+            border: 1px solid #667eea;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+    </style>
 </head>
 <body>
     <!-- Sidebar -->
@@ -130,8 +291,19 @@ $enrolledUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="course-content-wrapper">
         <!-- Course Header -->
         <div class="course-header">
-            <h3><?=htmlspecialchars($course['title'])?></h3>
-            <p><?=nl2br(htmlspecialchars($course['description']))?></p>
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h3><?=htmlspecialchars($course['title'])?></h3>
+                    <p><?=nl2br(htmlspecialchars($course['description']))?></p>
+                </div>
+                
+                <!-- Export Button for Admin/Proponent -->
+                <?php if((is_admin() || is_proponent()) && count($enrolledStudents) > 0): ?>
+                    <a href="?id=<?= $courseId ?>&export=csv" class="export-btn">
+                        <i class="fas fa-download me-2"></i>Export CSV
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Course Info -->
@@ -153,12 +325,13 @@ $enrolledUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="progress-header">
                 <h5><i class="fas fa-chart-line me-2"></i>Your Progress</h5>
                 <div class="time-spent">
-                    Time spent: <span id="timeSpent"><?= intval($enrollment['total_time_seconds']) ?></span> seconds
+                    <i class="fas fa-clock me-1"></i>
+                    Time spent: <span id="timeSpent"><?= intval($enrollment['total_time_seconds'] ?? 0) ?></span> seconds
                 </div>
             </div>
             
             <div class="status-container">
-                <?php if($enrollment['status'] === 'completed'): ?>
+                <?php if(($enrollment['status'] ?? '') === 'completed'): ?>
                     <span class="badge bg-success">
                         <i class="fas fa-check-circle me-2"></i>Completed
                     </span>
@@ -169,17 +342,22 @@ $enrolledUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </div>
 
-            <?php if($enrollment['status'] === 'completed'): ?>
-                <div class="alert alert-success">
-                    <i class="fas fa-graduation-cap me-2"></i>Congratulations! You have successfully completed this course 🎓
+            <?php if(($enrollment['status'] ?? '') === 'completed'): ?>
+                <div class="alert alert-success mt-3">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    Congratulations! You have successfully completed this course 🎓
                 </div>
             <?php endif; ?>
 
             <!-- Complete Button -->
-            <?php if($enrollment['status'] !== 'completed'): ?>
-                <button id="completeBtn" class="btn btn-success">
+            <?php if(($enrollment['status'] ?? '') !== 'completed'): ?>
+                <button id="completeBtn" class="btn btn-success mt-3" disabled>
                     <i class="fas fa-check-circle me-2"></i>Mark as Complete
                 </button>
+                <small class="text-muted ms-2">
+                    <i class="fas fa-info-circle"></i>
+                    Watch the video completely to enable completion
+                </small>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -187,14 +365,14 @@ $enrolledUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- PDF Content -->
         <?php if($course['file_pdf']): ?>
         <div class="content-card">
-            <h5><i class="fas fa-file-pdf text-danger"></i>Course PDF Material</h5>
+            <h5><i class="fas fa-file-pdf text-danger"></i> Course PDF Material</h5>
             
             <div class="pdf-viewer">
                 <iframe
                     src="<?= BASE_URL ?>/uploads/pdf/<?= htmlspecialchars($course['file_pdf']) ?>"
                     width="100%"
                     height="600"
-                    style="border:none">
+                    style="border:none; border-radius: 8px;">
                 </iframe>
             </div>
 
@@ -211,7 +389,7 @@ $enrolledUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Video Content -->
         <?php if($course['file_video']): ?>
         <div class="content-card">
-            <h5><i class="fas fa-video text-primary"></i>Course Video</h5>
+            <h5><i class="fas fa-video text-primary"></i> Course Video</h5>
             
             <div class="video-player">
                 <video id="courseVideo" width="100%" controls>
@@ -222,60 +400,265 @@ $enrolledUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
         <?php endif; ?>
 
-      
-      <!-- //list of users who is enrolled to this course -->
-        <?php if(is_admin() || is_proponent()): ?>
-            <?php if(count($enrolledUsers) > 0): ?>     
-                <div class="content-card">
-                    <h5><i class="fas fa-users text-info"></i>Enrolled Students</h5>
-                        <ul class="list-group">
-                            <?php foreach($enrolledUsers as $eu): ?>
-                                <li class="list-group-item">
-                                    <i class="fas fa-user me-2"></i>
-                                    <?= htmlspecialchars($eu['fname']) ?> <?= htmlspecialchars($eu['lname']) ?> 
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                </div>  
-            <?php endif; ?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+        <!-- ============================================ -->
+        <!-- ENROLLED STUDENTS SECTION - ADMIN/PROPONENT -->
+        <!-- ============================================ -->
+<?php if(is_admin() || is_proponent()): ?>
+<div class="students-section">
+<div class="students-header">
+<div class="d-flex justify-content-between align-items-center">
+<h4 class="mb-0">
+<i class="fas fa-users me-2"></i>
+Enrolled Students
+</h4>
+ <span class="badge bg-light text-dark">
+Total: <?= $stats['total_enrolled'] ?? 0 ?>
+</span>
+</div>
+<div class="students-stats">
+<div class="stat-item">
+<i class="fas fa-spinner"></i>
+Ongoing: <?= $stats['ongoing_count'] ?? 0 ?>
+</div>
+<div class="stat-item">
+<i class="fas fa-check-circle"></i>Completed: <?= $stats['completed_count'] ?? 0 ?>
+</div>
+<div class="stat-item">
+<i class="fas fa-chart-line"></i>
+Completion Rate: <?= $completionRate ?>%
+</div>
+ </div>
+</div>
+<div class="students-table-container">
+
+
+
+
+                    
+<?php if(count($enrolledStudents) > 0): ?>
+<div class="table-responsive">
+<table class="table table-hover align-middle" id="studentsTable">
+<thead class="table-light">
+<tr>
+<th>Student</th>
+<th>Email</th>
+<th>Status</th>
+<th>Enrolled Date</th>
+<th>Completed Date</th>
+<th>Progress</th>
+<th>Time Spent</th>
+</tr>
+</thead>
+
+
+
+
+
+<tbody>
+<?php foreach($enrolledStudents as $student): ?>
+<tr style="cursor: pointer;" 
+onclick="window.location.href='user_profile.php?id=<?= $student['id'] ?>'"><td>
+<div class="d-flex align-items-center">
+<div class="student-avatar me-3">
+<?= strtoupper(substr($student['fname'] ?? '', 0, 1) . substr($student['lname'] ?? '', 0, 1)) ?>
+</div>
+<div>
+<strong><?= htmlspecialchars($student['fname'] ?? '') ?> <?= htmlspecialchars($student['lname'] ?? '') ?></strong>
+<small class="d-block text-muted">@<?= htmlspecialchars($student['username'] ?? '') ?></small>
+</div>
+</div>
+</td>
+<td><?= htmlspecialchars($student['email'] ?? '') ?></td><td>
+<span class="badge <?= $student['status_color'] ?? 'bg-secondary' ?> status-badge">
+<i class="fas fa-<?= $student['status'] === 'completed' ? 'check-circle' : 'play-circle' ?> me-1"></i>
+<?= $student['status_text'] ?? ucfirst($student['status'] ?? 'Unknown') ?>
+</span>
+</td>
+<td>
+<i class="fas fa-calendar-alt text-muted me-1"></i>
+<?= $student['enrolled_date'] ?? date('M d, Y', strtotime($student['enrolled_at'])) ?>
+</td>
+<td>
+<?php if($student['completed_at']): ?>
+<i class="fas fa-check-circle text-success me-1"></i>
+<?= $student['completed_date'] ?? date('M d, Y', strtotime($student['completed_at'])) ?>
+<?php else: ?>
+<span class="text-muted">—</span>
+<?php endif; ?>
+</td>
+<td>
+<div class="d-flex align-items-center">
+<span class="fw-bold me-2"><?= intval($student['progress'] ?? 0) ?>%</span>
+<div class="progress-mini">
+<div class="progress-mini-bar" 
+style="width: <?= intval($student['progress'] ?? 0) ?>%;">
+ </div>
+</div>
+</div>
+</td>
+<td>
+<?php 
+$minutes = floor(($student['total_time_seconds'] ?? 0) / 60);
+$seconds = ($student['total_time_seconds'] ?? 0) % 60;?>
+<span class="badge bg-light text-dark">
+<i class="fas fa-clock me-1"></i>
+<?= $minutes > 0 ? $minutes . 'm ' : '' ?><?= $seconds ?>s
+</span>
+</td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</div>
+                        
+
+
+
+                        <!-- Table Footer with Count -->
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted">
+                                Showing <?= count($enrolledStudents) ?> of <?= $stats['total_enrolled'] ?? 0 ?> students
+                            </small>
+                            <div>
+                                <span class="badge bg-success me-2">
+                                    <i class="fas fa-check-circle"></i> Completed
+                                </span>
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-play-circle"></i> Ongoing
+                                </span>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <!-- Empty State -->
+                        <div class="empty-state">
+                            <i class="fas fa-user-graduate"></i>
+                            <h5>No Enrolled Students Yet</h5>
+                            <p class="text-muted">This course hasn't been taken by any students yet.</p>
+                            
+                            <?php if(is_proponent()): ?>
+                                <a href="<?= BASE_URL ?>/admin/courses_crud.php" class="btn btn-outline-primary mt-2">
+                                    <i class="fas fa-arrow-left"></i>
+                                    <h5>Back to Courses</h5>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
         <?php endif; ?>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     <script>
     <?php if(is_student()): ?>
-    let totalSeconds = parseInt($('#timeSpent').text());
+    let totalSeconds = parseInt($('#timeSpent').text() || 0);
+    let videoCompleted = false;
+    let pdfCompleted = false;
+    let autoCompleteSeconds = 60; // 60 seconds for PDF reading
 
-    // auto update time spent
+    // Auto update time spent
     setInterval(function(){
         totalSeconds++;
         $('#timeSpent').text(totalSeconds);
-        $.post(window.location.href, {seconds:1});
-    },1000);
+        $.post(window.location.href, {seconds: 1});
+    }, 1000);
 
-    // PDF / Video Completion
-// kapag natapos ung video mag oon ung button
-const video = document.getElementById('courseVideo');if (video) {
-const button = document.getElementById('completeBtn'); button.disabled = true;}
+    // Video Element
+    const video = document.getElementById('courseVideo');
+    const completeBtn = document.getElementById('completeBtn');
+    
+    if (video) {
+        // Disable complete button initially
+        if (completeBtn) completeBtn.disabled = true;
+        
+        // Enable complete button when video ends
+        video.addEventListener('ended', function() {
+            videoCompleted = true;
+            if (completeBtn) {
+                completeBtn.disabled = false;
+                completeBtn.classList.add('btn-pulse');
+            }
+            // Check if both conditions are met
+            checkCompletion();
+        });
+        
+        // Optional: Enable after watching 90% of video
+        video.addEventListener('timeupdate', function() {
+            if (!videoCompleted && video.duration > 0) {
+                let progress = (video.currentTime / video.duration) * 100;
+                if (progress >= 90) { // 90% watched
+                    videoCompleted = true;
+                    if (completeBtn) completeBtn.disabled = false;
+                    checkCompletion();
+                }
+            }
+        });
+    }
 
-// sa button to
-video.addEventListener('ended', (event) => {
-   
-    button.disabled = false;
-});
-    let pdfReadSeconds = 0;
-    let pdfCompleted = false;
+    // PDF Reading Timer
     <?php if($course['file_pdf']): ?>
-    setInterval(function () {
-        if (pdfCompleted) return;
-        pdfReadSeconds++;
-        if (pdfReadSeconds >= auto) { // 60 seconds reading
-            pdfCompleted = true;
-            completeCourse();
+    let pdfReadSeconds = 0;
+    setInterval(function() {
+        if (!pdfCompleted && completeBtn) {
+            pdfReadSeconds++;
+            if (pdfReadSeconds >= autoCompleteSeconds) {
+                pdfCompleted = true;
+                checkCompletion();
+            }
         }
     }, 1000);
     <?php endif; ?>
 
+    // Check if both conditions are met
+    function checkCompletion() {
+        let canComplete = false;
+        
+        if (video) {
+            canComplete = videoCompleted;
+        } else {
+            // If no video, just check PDF
+            canComplete = pdfCompleted;
+        }
+        
+        if (canComplete && completeBtn) {
+            completeBtn.disabled = false;
+        }
+    }
+
     // Video ended
-    $('#courseVideo').on('ended', function () {
+    $('#courseVideo').on('ended', function() {
         completeCourse();
     });
 
@@ -284,17 +667,21 @@ video.addEventListener('ended', (event) => {
         completeCourse();
     });
 
-    function completeCourse(){
-        $.post(window.location.href, { mark_completed: 1 }, function () {
-            alert('Course marked as completed 🎉');
-            location.reload();
+    function completeCourse() {
+        $.post(window.location.href, { mark_completed: 1 }, function(response) {
+            if (response.success) {
+                alert('🎉 Congratulations! Course marked as completed!');
+                location.reload();
+            }
         });
     }
     <?php endif; ?>
     
-    // Add animations
+
+    
+
     document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.content-card, .progress-section, .course-info-card');
+        const cards = document.querySelectorAll('.content-card, .progress-section, .course-info-card, .students-section');
         cards.forEach((card, index) => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';

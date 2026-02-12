@@ -34,13 +34,27 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="welcome-container">
+
+
+        <div class="welcome-container"   >
+            <div class="auth-buttons">
+                <a href="<?= BASE_URL ?>/public/login.php" class="auth-btn login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                        Log-In
+                </a>
+                <a href="<?= BASE_URL ?>/public/register.php" class="auth-btn register-btn">
+                    <i class="fas fa-user-plus"></i>
+                        Create Account
+                </a>
+            </div>
+        </div>
+   
         <!-- Hero Section -->
         <div class="welcome-hero">
             <h1>Welcome to Learning Management System</h1>
             <p>Transform your learning experience with our comprehensive Learning Management System. 
                Access courses, track progress, and connect with educators in one seamless platform.</p>
-        </div>
+              
         
         <!-- Features Section -->
         <div class="features-grid">
@@ -78,24 +92,6 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
             <div class="stat-item">
                 <div class="stat-number"><?= $avail['total_users'] ?></div>
                 <div class="stat-label">Active Learners</div>
-            </div>
-        </div>
-        
-        <!-- Authentication Section -->
-        <div class="auth-section">
-            <h2 style="color: white; margin-bottom: 30px; font-size: 32px;">Get Started Today</h2>
-            <p style="color: rgba(255, 255, 255, 0.9); max-width: 600px; margin: 0 auto 40px; font-size: 18px;">
-                Join thousands of learners who are already advancing their skills with EduLearn LMS.
-            </p>
-            <div class="auth-buttons">
-                <a href="<?= BASE_URL ?>/public/login.php" class="auth-btn login-btn">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Sign In
-                </a>
-                <a href="<?= BASE_URL ?>/public/register.php" class="auth-btn register-btn">
-                    <i class="fas fa-user-plus"></i>
-                    Create Account
-                </a>
             </div>
         </div>
         
