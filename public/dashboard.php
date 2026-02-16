@@ -72,23 +72,6 @@ try {
             <p>You have <?= $counter['ongoing'] ?> ongoing courses and <?= $counter['completed'] ?> completed courses. Keep up the great work!</p>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card stat-card-ongoing">
-                <div class="stat-number"><?= $counter['ongoing'] ?></div>
-                <div class="stat-label">Ongoing Courses</div>
-            </div>
-            
-            <div class="stat-card stat-card-completed">
-                <div class="stat-number"><?= $counter['completed'] ?></div>
-                <div class="stat-label">Completed Courses</div>
-            </div>
-            
-            <div class="stat-card stat-card-notenrolled">
-                <div class="stat-number"><?= $counter['not_enrolled'] ?></div>
-                <div class="stat-label">Available Courses</div>
-            </div>
-        </div>
 
         <!-- News & Courses Section -->
         <div class="content-section">

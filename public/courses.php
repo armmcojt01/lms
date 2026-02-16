@@ -187,7 +187,7 @@ if ($currentCourse):
 <?php endif; ?>
 </div>
 <a href="my_courses.php" class="btn btn-sm btn-light">
-<i class="fas fa-arrow-right"></i> Go to My kors
+<i class="fas fa-arrow-right"></i> Go to My Courses
 </a>
 </div>
 <?php endif; ?>

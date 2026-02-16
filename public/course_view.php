@@ -192,7 +192,7 @@ if (isset($_GET['export']) && $_GET['export'] == 'csv' && (is_admin() || is_prop
         }
         
         .students-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #164cc0 100%);
             color: white;
             padding: 20px 24px;
         }
