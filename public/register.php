@@ -283,9 +283,51 @@ if (isset($_SESSION['otp_time'])) {
             color: #0c5460;
             border: 1px solid #bee5eb;
         }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+    
+    /* Background image container */
+        body {
+            background-image: url('<?= BASE_URL ?>/uploads/images/photo%201.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Montserrat;
+            line-height: 1.6;    
+        }
+
+
+    /* Blue overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 35, 102, 0.4); /* Dark royal */
+            backdrop-filter: blur(5px);
+            z-index: -1;
+            
+        }
+    
+        .content {
+            position: relative;
+            padding: 50px;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            z-index: 1;
+            
+        }
+
     </style>
 </head>
 <body>
+    <div class="overlay"></div>
     <div class="login-container">
         <div class="login-header">
             <h1>Create Account</h1>
