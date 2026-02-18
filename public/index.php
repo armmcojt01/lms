@@ -91,7 +91,10 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
                 </a>
             </div>
         </div>
-   
+        <div>
+            
+        
+
         <!-- Hero Section -->
         <div class="welcome-hero">
             <div image class="logo-container">
@@ -143,8 +146,8 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
         <!-- Footer -->
         <footer class="welcome-footer">
-            <h4>&copy; <?= date('Y') ?> EduLearn Learning Management System. All rights reserved.</h4>
-            <div class="footer-links" style="margin-top: 10px;">
+            <p>&copy; <?= date('Y') ?> SkillHub Learning Management System. All rights reserved.</p>
+            <div class="footer-links" style="margin-top: 1px;">
                 <a href="#">Privacy Policy</a>
                 <a href="#">Terms of Service</a>
                 <a href="#">Contact Us</a>
