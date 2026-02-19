@@ -33,10 +33,12 @@ function get_role_icon($role = '') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-    <div class="lms-sidebar-container">
+    <div class="lms-sidebar-container"> 
         <nav class="sidebar lms-sidebar">
-                <strong><i class="fa-solid fa-chalkboard-user"></i>Learning Management System</strong>
-            </a>
+             <div class="sidebar-logo">
+                    <img src="<?= BASE_URL ?>/uploads/images/SkillHubside.png" 
+                         alt="UpskillHub" 
+                         class="logo-img">
             <ul class="nav flex-column">
                 <li class="nav-item" color>
                     <a class="nav-link" href="<?= BASE_URL ?>/public/profile.php">

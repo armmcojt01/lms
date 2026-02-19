@@ -5,13 +5,11 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
     min-height: 100vh;
     padding: 20px;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #3498db 100%);
 }
 
 /* Welcome Container */
@@ -19,41 +17,87 @@ body {
     max-width: 1200px;
     width: 100%;
     margin: 0 auto;
+    margin-bottom: 80px;
+    
 }
 
 /* Hero Section */
+
 .welcome-hero {
-    text-align: center;
+    text-align: left;   /* change from center to left */
     padding: 60px 20px;
     color: white;
+    margin-left: 60px;
+    margin-bottom: 100px;
 }
 
 .welcome-hero h1 {
-    font-size: 48px;
-    margin-bottom: 20px;
+    font-size: 40px;
+    margin-bottom: 50px;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    margin-bottom: 0px;     
+    margin-top: 0px;    
+    line-height: 0.8;
+    font-family: "Sen", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;   
 }
 
-.welcome-hero p {
+.welcome-hero h2 {
+    font-size: 70px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    font-family: "Sen", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: bold;
+}
+
+.welcome-hero h4 {
     font-size: 20px;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    font-family: "Sen", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 100;
+    font-style: normal; 
+}
+.welcome-hero p {
+    font-size: 25px;
     max-width: 800px;
-    margin: 0 auto 40px;
+    margin-bottom: 50px;  /* remove auto */
     opacity: 0.95;
     line-height: 1.6;
+    font-family: "Sen", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 200;
+    font-style: normal; 
 }
 
+/* Logo container */
+.logo-container {
+    margin-left: 60px;
+    margin-top: 5px;
+}
+.logo {
+    width: 400px;
+    height: auto;
+    margin-top: 20px;
+}
 /* Features Grid */
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
-    padding: 40px 20px;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 450px));
+    justify-content: center;
+    gap: 40px; /* slightly more space */
+    padding: 70px 20px; /* more top/bottom space */
 }
+
 
 .feature-card {
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.98));
     border-radius: 16px;
-    padding: 40px 30px;
+    padding: 40px 20px;
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -102,14 +146,14 @@ body {
 }
 
 .stat-number {
-    font-size: 48px;
+    font-size: 50px;
     font-weight: 700;
     margin-bottom: 10px;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .stat-label {
-    font-size: 18px;
+    font-size: 20px;
     opacity: 0.9;
 }
 
@@ -120,12 +164,13 @@ body {
 }
 
 .auth-buttons {
+    position: absolute;
+    top: 20px;
+    right: 20px;
     display: flex;
-    justify-content: center;
     gap: 30px;
-    margin-top: 40px;
-    flex-wrap: wrap;
 }
+
 
 .auth-btn {
     padding: 18px 50px;
@@ -137,7 +182,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    text-transform: uppercase;
+    text-transform: leftowercase;
     letter-spacing: 0.5px;
     min-width: 200px;
     justify-content: center;
@@ -169,17 +214,22 @@ body {
 
 /* Footer */
 .welcome-footer {
-    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
+    width: 100%;
+    padding: 40px 50px;
     color: rgba(255, 255, 255, 0.8);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 40px;
+    margin-top: 0; /* changed */
 }
+
 
 .footer-links a {
     color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
-    margin: 0 15px;
+    margin: 1px;
     transition: color 0.3s;
 }
 

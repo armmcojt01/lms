@@ -126,37 +126,37 @@ if ($act === 'editform' && isset($_GET['id'])) {
 <?php else: ?>
 
   <!-- LIST -->
-  <div class="card shadow-sm p-3">
-    <table class="table table-hover">
-      <thead class="table-light">
-        <tr>
-          <th>Title</th>
-          <th>By</th>
-          <th colspan="2">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php foreach ($news as $n): ?>
-        <tr>
-          <td><?= htmlspecialchars($n['title']) ?></td>
-          <td><?= htmlspecialchars($n['username']) ?></td>
-          <td>
-            <a href="?act=editform&id=<?= $n['id'] ?>" class="btn btn-sm btn-warning">
-              Edit
-            </a>
-          </td>
-          <td>
-            <a href="?act=delete&id=<?= $n['id'] ?>"
-               class="btn btn-sm btn-danger"
-               onclick="return confirm('Delete this news item?')">
-              Delete
-            </a>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
+ <div class="card shadow-sm p-3">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Title</th>
+        <th style="width:200x;" class="text-center">By</th>
+        <th style="width:150px;" class="text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($news as $n): ?>
+      <tr>
+        <td><?= htmlspecialchars($n['title']) ?></td>
+        <td class="text-center"><?= htmlspecialchars($n['username']) ?></td>
+        <td class="text-nowrap text-center">
+          <a href="?act=editform&id=<?= $n['id'] ?>"
+             class="btn btn-sm btn-warning me-1">
+            Edit
+          </a>
+
+          <a href="?act=delete&id=<?= $n['id'] ?>"
+             class="btn btn-sm btn-danger"
+             onclick="return confirm('Delete this news item?')">
+            Delete
+          </a>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+</div>
 
 <?php endif; ?>
 

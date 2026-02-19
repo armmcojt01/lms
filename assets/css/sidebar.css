@@ -73,6 +73,25 @@
    color: #ffffff !important; 
 }
 
+/* Logo styling */
+.sidebar-logo {
+    padding: 8px 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+}
+
+.sidebar-logo a {
+    display: block;
+}
+
+.sidebar-logo .logo-img {
+    max-width: 160px;  /* Adjust based on your logo size */
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
 /* Navigation items */
 .lms-sidebar .nav {
   gap: 0.5rem;

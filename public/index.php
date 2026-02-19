@@ -29,14 +29,57 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to EduLearn - Learning Management System</title>
+    <title>Welcome to SkillUp - Learning Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Sen:wght@400..800&display=swap" rel="stylesheet">
     <link href="<?= BASE_URL ?>/assets/css/index.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
+<style>
+     body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, sans-serif;
+        position: relative;
+    }
+    
+    /* Background image container */
+    body {
+            background-image: url('<?= BASE_URL ?>/uploads/images/photo%201.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Montserrat;
+            line-height: 1.6;
+        }
+
+
+    /* Blue overlay */
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 35, 102, 0.4); /* Dark royal */
+        z-index: -1;
+    }
+    
+    .content {
+        position: relative;
+        padding: 50px;
+        color: white;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        z-index: 1;
+    }
+
+</style>
+
 <body>
-
-
-        <div class="welcome-container"   >
+        <div class="overlay"></div>
+        <div class="welcome-container">
             <div class="auth-buttons">
                 <a href="<?= BASE_URL ?>/public/login.php" class="auth-btn login-btn">
                     <i class="fas fa-sign-in-alt"></i>
@@ -48,12 +91,18 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
                 </a>
             </div>
         </div>
-   
+        <div>
+            
+        
+
         <!-- Hero Section -->
         <div class="welcome-hero">
-            <h1>Welcome to Learning Management System</h1>
+            <div image class="logo-container">
+                <img src="<?= BASE_URL ?>/uploads/images/SkillHub.png" alt="SkillHub Logo" class="logo">
+            </div>
             <p>Transform your learning experience with our comprehensive Learning Management System. 
                Access courses, track progress, and connect with educators in one seamless platform.</p>
+        </div>
               
         
         <!-- Features Section -->
@@ -97,8 +146,8 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
         <!-- Footer -->
         <footer class="welcome-footer">
-            <p>&copy; <?= date('Y') ?> EduLearn Learning Management System. All rights reserved.</p>
-            <div class="footer-links" style="margin-top: 10px;">
+            <p>&copy; <?= date('Y') ?> SkillHub Learning Management System. All rights reserved.</p>
+            <div class="footer-links" style="margin-top: 1px;">
                 <a href="#">Privacy Policy</a>
                 <a href="#">Terms of Service</a>
                 <a href="#">Contact Us</a>

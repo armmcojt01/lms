@@ -129,8 +129,87 @@ exit;
 // FETCH ENROLLED STUDENTS - FOR ADMIN/PROPONENT
 // ============================================
 
-// [Keep all your existing fetch queries here...]
+// 1. ALL enrolled students (ongoing + completed)
+$stmt = $pdo->prepare('
+    SELECT 
+        u.id, 
+        u.fname, 
+        u.lname, 
+        u.email,
+        u.username,
+        e.status,
+        e.progress,
+        e.total_time_seconds,
+        e.enrolled_at,
+        e.completed_at,
+        DATE_FORMAT(e.enrolled_at, "%M %d, %Y") as enrolled_date,
+        DATE_FORMAT(e.completed_at, "%M %d, %Y") as completed_date,
+        CASE 
+            WHEN e.status = "completed" THEN "bg-success"
+            WHEN e.status = "ongoing" THEN "bg-warning"
+            ELSE "bg-secondary"
+        END as status_color,
+        CASE 
+            WHEN e.status = "completed" THEN "Completed"
+            WHEN e.status = "ongoing" THEN "Ongoing"
+            ELSE "Not Started"
+        END as status_text
+    FROM enrollments e
+    JOIN users u ON e.user_id = u.id 
+    WHERE e.course_id = ?
+    ORDER BY 
+        CASE e.status 
+            WHEN "ongoing" THEN 1 
+            WHEN "completed" THEN 2 
+            ELSE 3 
+        END,
+        e.enrolled_at DESC
+');
+$stmt->execute([$courseId]);
+$enrolledStudents = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// 2. Count statistics
+$stmt = $pdo->prepare('
+    SELECT 
+        COUNT(*) as total_enrolled,
+        SUM(CASE WHEN status = "ongoing" THEN 1 ELSE 0 END) as ongoing_count,
+        SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed_count
+    FROM enrollments 
+    WHERE course_id = ?
+');
+$stmt->execute([$courseId]);
+$stats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// 3. Completion rate
+$completionRate = 0;
+if ($stats['total_enrolled'] > 0) {
+    $completionRate = round(($stats['completed_count'] / $stats['total_enrolled']) * 100);
+}
+
+//4 rpt
+if (isset($_GET['export']) && $_GET['export'] == 'csv' && (is_admin() || is_proponent())) {
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="enrolled_students_course_' . $courseId . '.csv"');
+    
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Student Name', 'Email', 'Username', 'Status', 'Enrolled Date', 'Completed Date', 'Progress (%)', 'Time Spent (mins)']);
+    
+    foreach ($enrolledStudents as $student) {
+        $timeMinutes = round($student['total_time_seconds'] / 60, 1);
+        fputcsv($output, [
+            $student['fname'] . ' ' . $student['lname'],
+            $student['email'],
+            $student['username'],
+            $student['status_text'],
+            $student['enrolled_date'],
+            $student['completed_date'] ?? 'N/A',
+            $student['progress'] . '%',
+            $timeMinutes
+        ]);
+    }
+    fclose($output);
+    exit;
+}
 ?>
 <!doctype html>
 <html lang="en">
