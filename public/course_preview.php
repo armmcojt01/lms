@@ -1,11 +1,10 @@
 <?php
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/auth.php';
-require_once __DIR__ . '/../inc/functions.php';
-
 require_login();
-$u = current_user();
 
+$user = $_SESSION['user'];
+$userId = $user['id'] ?? 0;
 $courseId = intval($_GET['id'] ?? 0);
 if(!$courseId) die('Invalid course ID');
 
@@ -15,262 +14,351 @@ $stmt->execute([$courseId]);
 $course = $stmt->fetch();
 if(!$course) die('Course not found');
 
-// Fetch enrollment if student
-$enrollment = null;
-
-if (is_student()) {
-
-    // BLOCK if course expired or inactive
-    $today = date('Y-m-d');
-
-    if (
-        $course['is_active'] == 0 ||
-        ($course['expires_at'] && $today > $course['expires_at'])
-    ) {
-       
-        die('<div class="alert alert-danger m-4">
-                <h5>Course Unavailable</h5>
-                <p>This course has expired or is no longer active.</p>
-             </div>');
-    }
-
-    // Check enrollment
-    $stmt = $pdo->prepare('SELECT * FROM enrollments WHERE user_id=? AND course_id=?');
-    $stmt->execute([$u['id'], $courseId]);
-    $enrollment = $stmt->fetch();
-
-    if (!$enrollment) {
-        // Auto-create enrollment ONLY if course is valid
-        $stmt = $pdo->prepare('
-            INSERT INTO enrollments 
-            (user_id, course_id, enrolled_at, status, progress, total_time_seconds) 
-            VALUES (?, ?, NOW(), "ongoing", 0, 0)
-        ');
-        $stmt->execute([$u['id'], $courseId]);
-
-        $enrollmentId = $pdo->lastInsertId();
-        $enrollment = [
-            'id' => $enrollmentId,
-            'progress' => 0,
-            'total_time_seconds' => 0,
-            'status' => 'ongoing'
-        ];
-    } else {
-        $enrollmentId = $enrollment['id'];
-    }
+// Check if course is expired
+$isExpired = false;
+if (!empty($course['expires_at'])) {
+    $expiresAt = strtotime($course['expires_at']);
+    $now = time();
+    $isExpired = ($expiresAt < $now);
 }
 
+// CHECK IF USER HAS ANY ACTIVE ENROLLMENT
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) as active_count 
+    FROM enrollments 
+    WHERE user_id = ? AND status = 'ongoing'
+");
+$stmt->execute([$userId]);
+$activeEnrollment = $stmt->fetch(PDO::FETCH_ASSOC);
+$hasActiveEnrollment = ($activeEnrollment['active_count'] > 0);
 
-// Handle AJAX time tracking
-if($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['seconds']) && is_student()) {
-    $seconds = intval($_POST['seconds']);
-    $total_seconds = $enrollment['total_time_seconds'] + $seconds;
-    $progress = $total_seconds; // adjust formula if needed
-    $stmt = $pdo->prepare('UPDATE enrollments SET total_time_seconds=?, progress=? WHERE id=?');
-    $stmt->execute([$total_seconds, $progress, $enrollment['id']]);
-    echo json_encode(['success'=>true]);
-    exit;
-}
-
-// Handle completion
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_completed']) && is_student()) {
+// Get the active course details if exists
+$activeCourseId = null;
+$activeCourseTitle = null;
+if ($hasActiveEnrollment) {
     $stmt = $pdo->prepare("
-        UPDATE enrollments 
-        SET status = 'completed', completed_at = NOW() 
-        WHERE id = ?
+        SELECT c.id, c.title 
+        FROM enrollments e
+        JOIN courses c ON e.course_id = c.id
+        WHERE e.user_id = ? AND e.status = 'ongoing'
+        LIMIT 1
     ");
-    $stmt->execute([$enrollment['id']]);
-
-    echo json_encode(['success' => true]);
-    exit;
+    $stmt->execute([$userId]);
+    $activeCourse = $stmt->fetch();
+    if ($activeCourse) {
+        $activeCourseId = $activeCourse['id'];
+        $activeCourseTitle = $activeCourse['title'];
+    }
 }
 
+// Fetch all courses with enrollment info
+$stmt = $pdo->prepare("
+    SELECT 
+        c.id, 
+        c.title, 
+        c.description, 
+        c.summary,
+        c.thumbnail,
+        c.created_at, 
+        c.expires_at AS course_expires_at,
+        CASE 
+            WHEN e.status = 'ongoing' AND c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
+            ELSE COALESCE(e.status, 'notenrolled')
+        END AS enroll_status,
+        e.progress, 
+        e.total_time_seconds,
+        e.enrolled_at,
+        c.proponent_id
+    FROM courses c
+    LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
+    WHERE c.is_active = 1
+    ORDER BY c.id DESC
+");
+$stmt->execute([$userId]);
+$courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get enrollment status for this specific course
+$enrollStatus = 'notenrolled';
+foreach ($courses as $c) {
+    if ($c['id'] == $courseId) {
+        $enrollStatus = $c['enroll_status'];
+        break;
+    }
+}
+
+$stmt = $pdo->prepare("
+    SELECT c.id, c.title, c.description, c.thumbnail, c.created_at, c.expires_at,
+           e.progress, e.total_time_seconds, 
+           CASE 
+               WHEN e.status = 'ongoing' AND c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
+               ELSE e.status 
+           END AS enroll_status
+    FROM courses c
+    JOIN enrollments e ON e.course_id = c.id
+    WHERE e.user_id = ?
+    ORDER BY c.id DESC
+");
+$stmt->execute([$userId]);
+$myCourses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Handle enrollment POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll'])) {
+    // Check if course is expired
+    if ($isExpired) {
+        $_SESSION['error'] = "Cannot enroll: This course has expired.";
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+    
+    // Check if already enrolled
+    if ($enrollStatus === 'ongoing') {
+        $_SESSION['error'] = "You are already enrolled in this course.";
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+    
+    // CHECK FOR ACTIVE ENROLLMENT
+    if ($hasActiveEnrollment) {
+        $_SESSION['error'] = "You can only be enrolled in one course at a time. Please complete or drop your current course: <strong>" . htmlspecialchars($activeCourseTitle) . "</strong>";
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+    
+    // Proceed with enrollment
+    try {
+        $pdo->beginTransaction();
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO enrollments (user_id, course_id, status, enrolled_at, progress, total_time_seconds) 
+            VALUES (?, ?, 'ongoing', NOW(), 0, 0)
+        ");
+        $stmt->execute([$userId, $courseId]);
+        
+        $pdo->commit();
+        $_SESSION['success'] = "Successfully enrolled in the course!";
+        header("Location: " . BASE_URL . "/public/course_view.php?id=$courseId");
+        exit;
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        $_SESSION['error'] = "Enrollment failed: " . $e->getMessage();
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title><?=htmlspecialchars($course['title'])?> - LMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/sidebar.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<meta charset="utf-8">
+<title><?=htmlspecialchars($course['title'])?> - LMS</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/sidebar.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/course.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+        .btn-expired {
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+            color: white !important;
+            cursor: not-allowed !important;
+            opacity: 0.65;
+            pointer-events: none;
+        }
+        .btn-enrolled {
+            background-color: #970e6e !important;
+            border-color: #970e6e !important;
+            color: white !important;
+            cursor: not-allowed !important;
+            opacity: 0.65;
+            pointer-events: none;
+        }
+        .btn-locked {
+            background-color: #7e0026 !important;
+            border-color: #7e0026 !important;
+            color: #212529 !important;
+            cursor: not-allowed !important;
+            opacity: 0.65;
+            pointer-events: none;
+        }
+        .expired-badge {
+            display: inline-block;
+            padding: 0.35em 0.65em;
+            font-size: 0.75em;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+            background-color: #dc3545;
+            margin-left: 10px;
+        }
+        .active-course-alert {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .active-course-link {
+            color: #533f03;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+</style>
 </head>
 <body>
     <!-- Sidebar -->
-    <div class="lms-sidebar-container">
-        <?php include __DIR__ . '/../inc/sidebar.php'; ?>
-    </div>
+<div class="lms-sidebar-container">
+<?php include __DIR__ . '/../inc/sidebar.php'; ?>
+</div>
 
     <!-- Main Content -->
-    <div class="course-content-wrapper">
+<div class="course-content-wrapper">
+        <!-- Display session messages -->
+<?php if (isset($_SESSION['success'])): ?>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+<?= $_SESSION['success'] ?>
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['error'])): ?>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+<?= $_SESSION['error'] ?>
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
+        <!-- pls gumana ka warning if user is alredy enroll sa ibang kors-->
+<?php if ($hasActiveEnrollment && $enrollStatus !== 'ongoing' && !$isExpired): ?>
+<div class="active-course-alert">
+<i class="fas fa-info-circle"></i> 
+<strong>You have an active enrollment:</strong> 
+You are currently enrolled in <a href="course.php?id=<?= $activeCourseId ?>" class="active-course-link"><?= htmlspecialchars($activeCourseTitle) ?></a>. 
+You can only be enrolled in one course at a time. Please complete or drop your current course before enrolling in a new one.
+</div>
+<?php endif; ?>
+
         <!-- Course Header -->
-        <div class="course-header">
-            <h3><?=htmlspecialchars($course['title'])?></h3>
-            <p><?=nl2br(htmlspecialchars($course['description']))?></p>
-        </div>
+<div class="course-header">
+<h3>
+<?=htmlspecialchars($course['title'])?>
+<?php if ($isExpired): ?>
+<span class="expired-badge">EXPIRED</span>
+<?php endif; ?>
+</h3>
+<p><?=nl2br(htmlspecialchars($course['description']))?></p>
+</div>
 
         <!-- Course Info -->
-        <div class="course-info-card">
-            <div class="course-instructor">
-                <div class="instructor-avatar">
-                    <?= substr($course['fname'] ?? 'I', 0, 1) . substr($course['lname'] ?? 'nstructor', 0, 1) ?>
-                </div>
-                <div class="instructor-info">
-                    <h5><?= htmlspecialchars($course['fname'] ?? 'Instructor') ?> <?= htmlspecialchars($course['lname'] ?? '') ?></h5>
-                    <p>Course Instructor</p>
-                </div>
-            </div>
-        </div>
+<div class="course-info-card">
+<div class="course-instructor">
+<div class="instructor-avatar">
+<?= substr($course['fname'] ?? 'I', 0, 1) . substr($course['lname'] ?? 'Instructor', 0, 1) ?>
+</div>
+<div class="instructor-info">
+<h5><?= htmlspecialchars($course['fname'] ?? 'Instructor') ?> <?= htmlspecialchars($course['lname'] ?? '') ?></h5>
+<p>Course Instructor</p>
+</div>
+</div>
+<div class="modern-course-info-meta">
+<div>
+<div class="meta-item">
+<i class="fas fa-calendar-alt"></i>
+<span>Created on: <?= date('F j, Y', strtotime($course['created_at'] ?? '')) ?></span>
+</div>
+<div class="meta-item">
+<i class="fas fa-clock"></i>
+<span>Expires on: <?= $course['expires_at'] ? date('F j, Y', strtotime($course['expires_at'])) : 'No expiration' ?></span>
+ <?php if ($isExpired): ?>
+ <span class="badge bg-danger ms-2">Expired</span>
+<?php endif; ?>
+</div>
+</div> 
+</div>
 
-        <!-- Progress Section for Students -->
-        <?php if(is_student()): ?>
-        <div class="progress-section">
-            <div class="progress-header">
-                <h5><i class="fas fa-chart-line me-2"></i>Your Progress</h5>
-                <div class="time-spent">
-                    Time spent: <span id="timeSpent"><?= intval($enrollment['total_time_seconds']) ?></span> seconds
-                </div>
-            </div>
-            
-            <div class="status-container">
-                <?php if($enrollment['status'] === 'completed'): ?>
-                    <span class="badge bg-success">
-                        <i class="fas fa-check-circle me-2"></i>Completed
-                    </span>
-                <?php else: ?>
-                    <span class="badge bg-warning">
-                        <i class="fas fa-spinner me-2"></i>Ongoing
-                    </span>
-                <?php endif; ?>
-            </div>
+<div class="modern-card-actions mt-3">
+<?php if ($isExpired): ?>
+                    <!-- EXPIRED - Gray Button -->
+<button class="btn btn-expired" disabled>
+<i class="fas fa-hourglass-end"></i> Course Expired
+</button>
+<small class="text-muted d-block mt-2">
+<i class="fas fa-info-circle"></i> This course expired on <?= date('F j, Y', strtotime($course['expires_at'])) ?>
+</small>
+                    
+<?php elseif ($enrollStatus === 'ongoing'): ?>
+                    <!-- ALREADY ENROLLED - Green Button -->
+<button class="btn btn-enrolled" disabled>
+<i class="fas fa-check-circle"></i> Already Enrolled
+</button>
+<small class="text-muted d-block mt-2">
+<i class="fas fa-info-circle"></i> You are already enrolled in this course. 
+<a href="<?= BASE_URL ?>/public/course_view.php?id=<?= $course['id'] ?>" class="text-primary">Continue Learning</a>
+ </small>
+                    
+<?php elseif ($hasActiveEnrollment): ?>
+<!-- LOCKED - Yellow Button (has other active enrollment) -->
+<button class="btn btn-locked" disabled>
+<i class="fas fa-lock"></i> Enrollment Locked
+</button>
+<small class="text-muted d-block mt-2">
+<i class="fas fa-info-circle"></i> You are currently enrolled in 
+  <a href="course.php?id=<?= $activeCourseId ?>"><?= htmlspecialchars($activeCourseTitle) ?></a>. 
+ Complete that course first.
+ </small>
+                    
+<?php else: ?>
+                    <!-- ENROLL NOW POST form -->
+<form method="POST" style="display: inline;">
+<button type="submit" name="enroll" class="btn btn-primary">
+<i class="fas fa-sign-in-alt"></i> Enroll Now
+</button>
+</form>
+<?php if ($course['expires_at']): ?>
+<small class="text-muted d-block mt-2">
+<i class="fas fa-info-circle"></i> This course expires on <?= date('F j, Y', strtotime($course['expires_at'])) ?>
+</small>
+<?php endif; ?>
+<?php endif; ?>
+</div>
+</div>
 
-            <?php if($enrollment['status'] === 'completed'): ?>
-                <div class="alert alert-success">
-                    <i class="fas fa-graduation-cap me-2"></i>Congratulations! You have successfully completed this course 🎓
-                </div>
-            <?php endif; ?>
+<!-- test Preview Section -->
+<div class="mt-4">
+<h4>Course Preview</h4>
+<div class="modern-course-info-content p-3 border rounded">
+<?= $course['summary'] ?? '<p class="text-muted">No preview available.</p>' ?>
+</div>
+</div>
+</div>
 
-            <!-- Complete Button -->
-            <?php if($enrollment['status'] !== 'completed'): ?>
-                <button id="completeBtn" class="btn btn-success">
-                    <i class="fas fa-check-circle me-2"></i>Mark as Complete
-                </button>
-            <?php endif; ?>
-        </div>
-        <?php endif; ?>
-
-        <!-- PDF Content -->
-        <?php if($course['file_pdf']): ?>
-        <div class="content-card">
-            <h5><i class="fas fa-file-pdf text-danger"></i>Course PDF Material</h5>
-            
-            <div class="pdf-viewer">
-                <iframe
-                    src="<?= BASE_URL ?>/uploads/pdf/<?= htmlspecialchars($course['file_pdf']) ?>"
-                    width="100%"
-                    height="600"
-                    style="border:none">
-                </iframe>
-            </div>
-
-            <p class="mt-3">
-                <a class="btn btn-outline-primary"
-                   href="<?= BASE_URL ?>/uploads/pdf/<?= htmlspecialchars($course['file_pdf']) ?>"
-                   target="_blank">
-                    <i class="fas fa-external-link-alt me-2"></i>Open PDF in new tab
-                </a>
-            </p>
-        </div>
-        <?php endif; ?>
-
-        <!-- Video Content -->
-        <?php if($course['file_video']): ?>
-        <div class="content-card">
-            <h5><i class="fas fa-video text-primary"></i>Course Video</h5>
-            
-            <div class="video-player">
-                <video id="courseVideo" width="100%" controls>
-                    <source src="<?= BASE_URL ?>/uploads/video/<?= htmlspecialchars($course['file_video']) ?>" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
-
-    <script>
-    <?php if(is_student()): ?>
-    let totalSeconds = parseInt($('#timeSpent').text());
-
-    // auto update time spent
-    setInterval(function(){
-        totalSeconds++;
-        $('#timeSpent').text(totalSeconds);
-        $.post(window.location.href, {seconds:1});
-    },1000);
-
-    // PDF / Video Completion
-// kapag natapos ung video mag oon ung button
-const video = document.getElementById('courseVideo');if (video) {
-const button = document.getElementById('completeBtn'); button.disabled = true;}
-
-// sa button to
-video.addEventListener('ended', (event) => {
-   
-    button.disabled = false;
+<script>
+$(document).ready(function() {
+const isExpired = <?= $isExpired ? 'true' : 'false' ?>;
+const enrollStatus = "<?= $enrollStatus ?>";
+const hasActiveEnrollment = <?= $hasActiveEnrollment ? 'true' : 'false' ?>;
+        
+if (isExpired || hasActiveEnrollment) {
+$('.btn-primary').addClass('disabled').attr('disabled', true);
+}
+        
+        // Confirmation for enrollment
+ $('button[name="enroll"]').click(function(e) {
+if (!confirm('Are you sure you want to enroll in this course? You can only be enrolled in one course at a time.')) {
+e.preventDefault();
+return false;
+}
 });
-
-
-
-
-
-    let pdfReadSeconds = 0;
-    let pdfCompleted = false;
-    <?php if($course['file_pdf']): ?>
-    setInterval(function () {
-        if (pdfCompleted) return;
-        pdfReadSeconds++;
-        if (pdfReadSeconds >= 5) { // 60 seconds reading
-            pdfCompleted = true;
-            completeCourse();
-        }
-    }, 1000);
-    <?php endif; ?>
-
-    // Video ended
-    $('#courseVideo').on('ended', function () {
-        completeCourse();
-    });
-
-    // Complete button click
-    $('#completeBtn').on('click', function(){
-        completeCourse();
-    });
-
-    function completeCourse(){
-        $.post(window.location.href, { mark_completed: 1 }, function () {
-            alert('Course marked as completed 🎉');
-            location.reload();
-        });
-    }
-    <?php endif; ?>
-    
-    // Add animations
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.content-card, .progress-section, .course-info-card');
-        cards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            
-            setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 100);
-        });
-    });
-    </script>
+});
+</script>
 </body>
 </html>

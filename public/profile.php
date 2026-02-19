@@ -4,7 +4,9 @@ require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/functions.php';
 
 require_login();
+$userId = $_SESSION['user']['id'];
 $u = current_user();
+
 
 // Get fresh user data from database to ensure we have latest
 $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
@@ -29,7 +31,7 @@ $stmt = $pdo->prepare("
     ORDER BY c.id DESC
 ");
 
-// $stmt->execute([$userId]);
+$stmt->execute([$userId]);
  $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Calculate counters
@@ -38,6 +40,7 @@ foreach ($courses as $c) {
     if (!$c['enroll_status']) $counter['not_enrolled']++;
     elseif ($c['enroll_status'] === 'ongoing') $counter['ongoing']++;
     elseif ($c['enroll_status'] === 'completed') $counter['completed']++;
+
 }
 
 // Function to get role display name
@@ -63,7 +66,7 @@ function get_role_display_name($role) {
 <body>
 
 <div class="lms-sidebar-container">
-    <?php include __DIR__ . '/../inc/sidebar.php'; ?>
+    <?php include __DIR__ . '/../inc/sidebar.php'; ?>              
 </div>
 
 <div class="profile-wrapper">
@@ -86,7 +89,7 @@ function get_role_display_name($role) {
 
     <div class="profile-card">
         <!-- Avatar -->
-        <div class="profile-avatar">
+         <div class="profile-avatar <?= strtolower(trim($u['role'] ?? 'guest')) ?>">
             <?php
             $initials = 'U';
             if(isset($u['fname']) && !empty($u['fname'])) {
@@ -141,7 +144,6 @@ function get_role_display_name($role) {
                 <div class="stat-label">Available Courses</div>
             </div>
         </div>
-
 
         <!-- Actions -->
         <div class="text-center">

@@ -1,10 +1,13 @@
+
 <?php
+
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/auth.php';
 
 require_login();
 
-if (!is_admin() && !is_proponent()) {
+// Only admins and proponents can access this page
+if (!is_admin() && !is_proponent() && !is_superadmin()) {
     http_response_code(403);
     exit('Access denied');
 }
@@ -41,6 +44,23 @@ function uploadFile($input, $dir, $allowed = []) {
     return $filename;
 }
 
+/**
+ * Check if current user can edit/delete course
+ * Returns true for admins OR if user owns the course
+ */
+function canModifyCourse($course_id, $pdo) {
+    if (is_admin()) {
+        return true;
+    }
+    
+    $stmt = $pdo->prepare("SELECT proponent_id FROM courses WHERE id = :id");
+    $stmt->execute([':id' => $course_id]);
+    $course = $stmt->fetch();
+    
+    return $course && $course['proponent_id'] == $_SESSION['user']['id'];
+}
+
+
 /* =========================
    ADD COURSE
 ========================= */
@@ -53,10 +73,10 @@ if ($act === 'addform' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $stmt = $pdo->prepare("
         INSERT INTO courses (
-            title, description, thumbnail, file_pdf, file_video,
+            title, description, summary, thumbnail, file_pdf, file_video,
             proponent_id, created_at, expires_at, is_active
         ) VALUES (
-            :title, :description, :thumbnail, :pdf, :video,
+            :title, :description, :summary, :thumbnail, :pdf, :video,
             :proponent_id, NOW(), :expires_at, 1
         )
     ");
@@ -64,6 +84,7 @@ if ($act === 'addform' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([
         ':title'         => $_POST['title'],
         ':description'   => $_POST['description'],
+        ':summary'       => $_POST['summary'],
         ':thumbnail'     => uploadFile('thumbnail', 'images', ['jpg','jpeg','png','webp']),
         ':pdf'           => uploadFile('file_pdf', 'pdf', ['pdf']),
         ':video'         => uploadFile('file_video', 'video', ['mp4','webm']),
@@ -87,6 +108,12 @@ if ($act === 'edit' && $id) {
     if (!$course) {
         exit('Course not found');
     }
+    
+    // Check if user can edit this course
+    if (!canModifyCourse($id, $pdo)) {
+        http_response_code(403);
+        exit('Access denied: You can only edit your own courses');
+    }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -99,6 +126,7 @@ if ($act === 'edit' && $id) {
             UPDATE courses SET
                 title       = :title,
                 description = :description,
+                summary     = :summary,
                 expires_at  = :expires_at,
                 thumbnail   = :thumbnail,
                 file_pdf    = :pdf,
@@ -109,6 +137,7 @@ if ($act === 'edit' && $id) {
         $stmt->execute([
             ':title'       => $_POST['title'],
             ':description' => $_POST['description'],
+            ':summary'     => $_POST['summary'],
             ':expires_at'  => $expires_at,
             ':thumbnail'   => uploadFile('thumbnail','images',['jpg','jpeg','png','webp']) ?? $course['thumbnail'],
             ':pdf'         => uploadFile('file_pdf','pdf',['pdf']) ?? $course['file_pdf'],
@@ -124,7 +153,13 @@ if ($act === 'edit' && $id) {
 /* =========================
    DELETE COURSE
 ========================= */
-if ($act === 'delete' && $id && is_admin()) {
+if ($act === 'delete' && $id) {
+    // Check if user can delete this course
+    if (!canModifyCourse($id, $pdo)) {
+        http_response_code(403);
+        exit('Access denied: You can only delete your own courses');
+    }
+    
     $stmt = $pdo->prepare("DELETE FROM courses WHERE id = :id");
     $stmt->execute([':id' => $id]);
     header('Location: courses_crud.php');
@@ -134,13 +169,12 @@ if ($act === 'delete' && $id && is_admin()) {
 /* =========================
    FETCH COURSES
 ========================= */
-$courses = $pdo->query("
-    SELECT c.*, u.username 
-    FROM courses c 
-    LEFT JOIN users u ON c.proponent_id = u.id
-    ORDER BY c.created_at DESC
-")->fetchAll();
+
+$stmt = $pdo->query("SELECT c.*, u.username FROM courses c LEFT JOIN users u ON c.proponent_id = u.id ORDER BY c.created_at DESC");
+$courses = $stmt->fetchAll();
 ?>
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -159,6 +193,12 @@ $courses = $pdo->query("
 <div class="modern-courses-wrapper">
 <h3 class="mb-4">Courses Management</h3>
 
+<?php if (is_proponent()): ?>
+<div class="alert alert-info mb-3">
+    <i class="fas fa-info-circle"></i> You can only view and edit courses that you have created.
+</div>
+<?php endif; ?>
+
 <?php if ($act === 'addform' || $act === 'edit'): ?>
 <?php $editing = ($act === 'edit'); ?>
 
@@ -171,8 +211,13 @@ $courses = $pdo->query("
     </div>
 
     <div class="mb-3">
-        <textarea name="description" class="form-control" rows="4" required
-                  placeholder="Description"><?= $editing ? htmlspecialchars($course['description']) : '' ?></textarea>
+        <input name="description" class="form-control" placeholder="Description" required
+               value="<?= $editing ? htmlspecialchars($course['description']) : '' ?>">
+    </div>
+
+    <div class="mb-3">
+        <textarea name="summary" class="form-control" rows="4" required
+                  placeholder="Course Summary"><?= $editing ? htmlspecialchars($course['summary']) : '' ?></textarea>
     </div>
 
     <div class="row">
@@ -230,7 +275,7 @@ $courses = $pdo->query("
     <?php foreach ($courses as $c): ?>
         <div class="modern-course-card">
             <div class="modern-card-img">
-                <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'placeholder.png') ?>" alt="Course Image">
+                <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'Course Image.png') ?>" alt="Course Image.png">
             </div>
         <div class="modern-card-body">
             <div class="modern-card-title">
@@ -250,16 +295,21 @@ $courses = $pdo->query("
             <p><strong>Expires:</strong> <span><?= $expiryDate ?></span></p>
             </div>
         <div class="modern-card-actions">
-            <a href="<?= BASE_URL ?>/public/course_view.php?id=<?= $c['id'] ?>" class="modern-btn-primary modern-btn-sm">View</a>
-            <a href="?act=edit&id=<?= $c['id'] ?>" class="modern-btn-warning modern-btn-sm">Edit</a>
-                <?php if (is_admin()): ?>
-                    <a href="?act=delete&id=<?= $c['id'] ?>" class="modern-btn-danger modern-btn-sm"
-                       onclick="return confirm('Delete this course?')">Delete</a>
-                <?php endif; ?>
+            <a href="<?= BASE_URL ?>/proponent/view_course.php?id=<?= $c['id'] ?>" class="modern-btn-primary modern-btn-sm">View</a>
+            
+            <?php if (canModifyCourse($c['id'], $pdo)): ?>
+                <a href="?act=edit&id=<?= $c['id'] ?>" class="modern-btn-warning modern-btn-sm">Edit</a>
+                <a href="?act=delete&id=<?= $c['id'] ?>" class="modern-btn-danger modern-btn-sm"
+                   onclick="return confirm('Delete this course?')">Delete</a>
+            <?php else: ?>
+                <span class="btn btn-secondary ms-2">Read Only</span>
+            <?php endif; ?>
         </div>  
         </div>
         </div>
     <?php endforeach; ?>
+
+    
 </div>
 
 <?php endif; ?>

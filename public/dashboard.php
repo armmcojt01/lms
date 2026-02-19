@@ -146,7 +146,7 @@ try {
                             <a href="<?= $courseUrl ?>" class="course-card-link">
                                 <div class="course-card">
                                     <div class="course-card-img">
-                                        <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'placeholder.png') ?>" alt="Course Image">
+                                        <img src="<?= BASE_URL ?>/uploads/images/<?= htmlspecialchars($c['thumbnail'] ?: 'Course Image.png') ?>" alt="Course Image.png">
                                     </div>
                                     <div class="course-card-body">
                                         <div class="course-card-title">
