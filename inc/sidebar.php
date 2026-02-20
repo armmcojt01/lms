@@ -11,12 +11,16 @@ if(!defined('BASE_URL')) {
 }
 
 // Function to get role icon - WITH DEFAULT VALUE
-function get_role_icon($role = '') {
-    $icons = [
-        'admin' => 'fa-user-shield',
-        'user' => 'fa-user-graduate',
-    ];
-    return $icons[$role] ?? 'fa-user';
+if (!function_exists('get_role_icon')) {
+    function get_role_icon($role) {
+        switch ($role) {
+            case 'superadmin': return 'fas fa-crown';
+            case 'admin': return 'fas fa-user-shield';
+            case 'proponent': return 'fas fa-chalkboard-teacher';
+            case 'user': return 'fas fa-user';
+            default: return 'fas fa-user';
+        }
+    }
 }
 
 ?>
