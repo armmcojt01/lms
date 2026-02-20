@@ -92,8 +92,8 @@ function get_role_icon($role = '') {
             <?php endif; ?>
             <?php if($u && (is_proponent() || is_admin() || is_superadmin())): ?>
                <li class="nav-item">
-                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php?act=addform">
-                    <i class="fa fa-plus"></i> managekors
+                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php">
+                    <i class="fa fa-plus"></i> Manage Courses
                 </a>
               
         
@@ -118,9 +118,7 @@ function get_role_icon($role = '') {
                             <i class="fa fa-newspaper"></i> News
                         </a>
                     </li>
-                    <li class="nav-item">
-                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php?act=addform">
-                    <i class="fa fa-plus"></i> Add Course
+                    
                 </a>
                 <?php endif; ?>
 

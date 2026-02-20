@@ -27,133 +27,74 @@ $departments = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['otp_verify'])) {
-        // ============ OTP VERIFICATION CODE or just follow the number HAHHAHAHAHHA number 1 ============
-        $enteredOTP = $_POST['security_code'] ?? '';
-        $storedOTP = $_SESSION['registration_otp'] ?? '';
-        $userData = $_SESSION['registration_data'] ?? [];
-        
-        if (empty($enteredOTP)) {
-            $err = 'Please enter the OTP';
-            $showOTP = true;
-        } elseif (empty($storedOTP) || empty($userData)) {
-            $err = 'OTP session expired. Please register again.';
-        } elseif ($enteredOTP !== $storedOTP) {
-            $err = 'Invalid OTP. Please try again.';
-            $showOTP = true;
-        } else {
-            // OTP is correct! Create the user account = 2
-            $hash = password_hash($userData['password'], PASSWORD_DEFAULT);
-            
-            // insert sa database with confirm status =3
-            $stmt = $pdo->prepare('INSERT INTO users (username, password, fname, lname, email, role, status, created_at) VALUES (?, ?, ?, ?, ?, "user", "pending", NOW())');
-            
-            if ($stmt->execute([$userData['username'], $hash, $userData['fname'], $userData['lname'], $userData['email']])) {
-                // Clear session data
-                unset($_SESSION['registration_otp']);
-                unset($_SESSION['registration_data']);
-                unset($_SESSION['otp_time']);
-                
-                // auto login to if ever hindi na gana try remove ?register=1 below 
-                header('Location: login.php?registered=1');
-                exit();
-            } else {
-                $err = 'Registration failed. Please try again.';
-                $showOTP = true;
-            }
-        }
-        
-    } elseif (isset($_POST['resend_otp'])) {
-        // resend otp
-        $userData = $_SESSION['registration_data'] ?? [];
-        
-        if (!empty($userData)) {
-            // generator ng otp 4
-            $newOTP = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $_SESSION['registration_otp'] = $newOTP;
-            $_SESSION['otp_time'] = time();
-            
-            // send otp 5
-            $fullName = $userData['fname'] . ' ' . $userData['lname'];
-            $emailResult = sendOTPEmail($userData['email'], $fullName, $newOTP);
-            
-            if (!$emailResult['success']) {
-                $emailResult = sendOTPEmail($userData['email'], $fullName, $newOTP);
-            }
-            
-            $success = $emailResult['success'] ? "New OTP sent to your email" : "Failed to resend OTP";
-            $showOTP = true;
-        } else {
-            $err = 'Session expired. Please register again.';
-        }
-        
-    } else {
-        // ============ INITIAL R3GISTRATION PORM ============
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $fname = trim($_POST['fname'] ?? '');
-        $lname = trim($_POST['lname'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        
-        // Validation
-        if (!$username || !$password || !$email) { 
-            $err = 'All fields are required'; 
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $err = 'Invalid email format';
-        } elseif (strlen($password) < 8) {
-            $err = 'Password must be at least 8 characters';
-        } else {
-            // check from user select ID for existing user to
-            $stmt = $pdo->prepare('SELECT id FROM users WHERE username = ? OR email = ?');
-            $stmt->execute([$username, $email]);
-            if ($stmt->fetch()) { 
-                $err = 'Username or email already exists'; 
-            } else {
-                //regenirate otp 5
-                $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-                
-                // Store in session cache daw to wag nalang galawin sabi ni kenneth
-                $_SESSION['registration_data'] = [
-                    'username' => $username,
-                    'password' => $password,
-                    'fname' => $fname,
-                    'lname' => $lname,
-                    'email' => $email
-                ];
-                $_SESSION['registration_otp'] = $otp;
-                $_SESSION['otp_time'] = time(); // Store generation time
-                
-                // will call $email nalang tinatamad na ako mag type  send otp
-                $fullName = $fname . ' ' . $lname;
-                $emailResult = sendOTPEmail($email, $fullName, $otp);
-                
-                // If PHPMailer fails use local logging hehehhe
-                if (!$emailResult['success']) {
-                    error_log("PHPMailer failed: " . $emailResult['message']);
-                    $emailResult = sendOTPEmail($email, $fullName, $otp);
-                    
-                    if ($emailResult['success']) {
-                        $success = "OTP generated: <strong>$otp</strong> (Check server logs)";
-                        $showOTP = true;
-                    } else {
-                        $err = 'Failed to generate OTP. Please try again.';
-                    }
-                } else {
-                    $success = "OTP has been sent to $email";
-                    $showOTP = true;
-                }
-            }
-        }
-    }
+if (isset($_POST['otp_verify'])) {
+// OTP VERIFICATION
+$enteredOTP = $_POST['security_code'] ?? '';
+$storedOTP = $_SESSION['registration_otp'] ?? '';
+$userData = $_SESSION['registration_data'] ?? [];
+
+if (empty($enteredOTP)) {
+$err = 'Please enter the OTP';
+$showOTP = true;
+} elseif (empty($storedOTP) || empty($userData)) {
+$err = 'OTP session expired. Please register again.';
+} elseif ($enteredOTP !== $storedOTP) {
+$err = 'Invalid OTP. Please try again.';
+$showOTP = true;
+} else {
+// OTP is correct! Create the user account
+$hash = password_hash($userData['password'], PASSWORD_DEFAULT);
+
+// Convert departments array to JSON for storage
+$departmentsJson = json_encode($userData['departments'] ?? []);
+$course = $userData['course'] ?? '';
+
+// Insert into database with departments as JSON
+$stmt = $pdo->prepare('INSERT INTO users (username, password, fname, lname, email, departments, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "user", "pending", NOW())');
+
+if ($stmt->execute([
+$userData['username'], 
+$hash, 
+$userData['fname'], 
+$userData['lname'], 
+$userData['email'],
+$departmentsJson,
+
+])) {
+// Clear session data
+unset($_SESSION['registration_otp']);
+unset($_SESSION['registration_data']);
+unset($_SESSION['otp_time']);
+
+// Redirect to login
+header('Location: login.php?registered=1');
+exit();
+} else {
+$err = 'Registration failed. Please try again.';
+$showOTP = true;
+}
 }
 
-// Calculate OTP time left if OTP was sent
-        if (isset($_SESSION['otp_time'])) {
-       $otpTime = $_SESSION['otp_time'];
-        $currentTime = time();
-        $timeElapsed = $currentTime - $otpTime;
-       $timeLeft = 600 - $timeElapsed; // 10m in secc
-    if ($timeLeft < 0) $timeLeft = 0;
+} elseif (isset($_POST['resend_otp'])) {
+// Resend OTP
+$userData = $_SESSION['registration_data'] ?? [];
+
+if (!empty($userData)) {
+// Generate new OTP
+$newOTP = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+$_SESSION['registration_otp'] = $newOTP;
+$_SESSION['otp_time'] = time();
+
+// Send OTP
+$fullName = $userData['fname'] . ' ' . $userData['lname'];
+$emailResult = sendOTPEmail($userData['email'], $fullName, $newOTP);
+
+if (!$emailResult['success']) {
+$emailResult = sendOTPEmail($userData['email'], $fullName, $newOTP);
+}
+
+$success = $emailResult['success'] ? "New OTP sent to your email" : "Failed to resend OTP";
+$showOTP = true;
 } else {
 $err = 'Session expired. Please register again.';
 }
@@ -233,194 +174,282 @@ if ($timeLeft < 0) $timeLeft = 0;
 $timeLeft = 600;
 }
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Create Account</title>
-    <link href="<?= BASE_URL ?>/assets/css/login.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Additional CSS for OTP functionality by AI */
-        .otp-section {
-            margin: 20px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #007bff;
-        }
-        
-        .otp-input-container {
-            position: relative;
-            margin: 20px 0;
-        }
-        
-        .otp-input {
-            letter-spacing: 10px;
-            font-size: 28px;
-            text-align: center;
-            padding: 15px;
-            width: 100%;
-            box-sizing: border-box;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        
-        .otp-input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-            outline: none;
-        }
-        
-        .timer-display {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-            margin: 10px 0;
-        }
-        
-        .timer-expired {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        
-        .resend-code-btn {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
-            margin-left: 10px;
-        }
-        
-        .resend-code-btn:hover {
-            background: #5a6268;
-        }
-        
-        .resend-code-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .btn-verify {
-            flex: 1;
-            background: #28a745;
-        }
-        
-        .btn-verify:hover {
-            background: #218838;
-        }
-        
-        .btn-cancel {
-            flex: 1;
-            background: #6c757d;
-        }
-        
-        .btn-cancel:hover {
-            background: #5a6268;
-        }
-        
-        .code-status {
-            display: block;
-            margin-top: 5px;
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 12px;
-            border-radius: 4px;
-            margin: 15px 0;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .alert {
-            padding: 12px;
-            border-radius: 4px;
-            margin: 15px 0;
-        }
-        
-        .alert-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register - Create Account</title>
+<link href="<?= BASE_URL ?>/assets/css/login.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* Additional CSS for OTP functionality */
+.otp-section {
+margin: 20px 0;
+padding: 20px;
+background: #f8f9fa;
+border-radius: 8px;
+border-left: 4px solid #007bff;
+}
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
-            position: relative;
-        }
-    
-    /* Background image container */
-        body {
-            background-image: url('<?= BASE_URL ?>/uploads/images/photo%201.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Montserrat;
-            line-height: 1.6;    
-        }
+.otp-input-container {
+position: relative;
+margin: 20px 0;
+}
 
+.otp-input {
+letter-spacing: 10px;
+font-size: 28px;
+text-align: center;
+padding: 15px;
+width: 100%;
+box-sizing: border-box;
+border: 2px solid #ddd;
+border-radius: 8px;
+transition: all 0.3s;
+}
 
-    /* Blue overlay */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 35, 102, 0.4); /* Dark royal */
-            backdrop-filter: blur(5px);
-            z-index: -1;
-            
-        }
-    
-        .content {
-            position: relative;
-            padding: 50px;
-            color: white;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-            z-index: 1;
-            
-        }
+.otp-input:focus {
+border-color: #007bff;
+box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+outline: none;
+}
 
-    </style>
+.timer-display {
+text-align: center;
+font-size: 14px;
+color: #666;
+margin: 10px 0;
+}
+
+.timer-expired {
+color: #dc3545;
+font-weight: bold;
+}
+
+.resend-code-btn {
+background: #6c757d;
+color: white;
+border: none;
+padding: 8px 15px;
+border-radius: 4px;
+cursor: pointer;
+font-size: 14px;
+transition: background 0.3s;
+margin-left: 10px;
+}
+
+.resend-code-btn:hover {
+background: #5a6268;
+}
+
+.resend-code-btn:disabled {
+background: #ccc;
+cursor: not-allowed;
+}
+
+.form-actions {
+display: flex;
+gap: 10px;
+margin-top: 20px;
+}
+
+.btn-verify {
+flex: 1;
+background: #28a745;
+}
+
+.btn-verify:hover {
+background: #218838;
+}
+
+.btn-cancel {
+flex: 1;
+background: #6c757d;
+}
+
+.btn-cancel:hover {
+background: #5a6268;
+}
+
+/* Department Checkbox Styles */
+.department-section {
+margin: 20px 0;
+padding: 15px;
+background: #f8f9fa;
+border-radius: 8px;
+border: 1px solid #e0e0e0;
+}
+
+.department-title {
+font-size: 14px;
+font-weight: 600;
+color: #555;
+margin-bottom: 15px;
+display: flex;
+align-items: center;
+}
+
+.department-title i {
+color: #667eea;
+margin-right: 8px;
+}
+
+.checkbox-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+gap: 12px;
+max-height: 300px;
+overflow-y: auto;
+padding: 5px;
+}
+
+.checkbox-item {
+display: flex;
+align-items: center;
+padding: 8px 12px;
+background: white;
+border: 1px solid #e0e0e0;
+border-radius: 8px;
+transition: all 0.2s;
+cursor: pointer;
+}
+
+.checkbox-item:hover {
+background: #e7f1ff;
+border-color: #667eea;
+transform: translateY(-2px);
+box-shadow: 0 4px 8px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-item input[type="checkbox"] {
+width: 18px;
+height: 18px;
+margin-right: 12px;
+cursor: pointer;
+accent-color: #667eea;
+}
+
+.checkbox-item label {
+cursor: pointer;
+font-size: 14px;
+color: #333;
+flex: 1;
+}
+
+.selected-count {
+display: inline-block;
+background: #667eea;
+color: white;
+padding: 4px 12px;
+border-radius: 50px;
+font-size: 12px;
+margin-left: 10px;
+}
+
+.select-all-btn {
+background: none;
+border: 1px dashed #667eea;
+color: #667eea;
+padding: 5px 15px;
+border-radius: 20px;
+font-size: 12px;
+cursor: pointer;
+transition: all 0.2s;
+margin-left: auto;
+}
+
+.select-all-btn:hover {
+background: #667eea;
+color: white;
+}
+
+.department-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 15px;
+}
+
+/* Alert styles */
+.alert {
+padding: 12px;
+border-radius: 4px;
+margin: 15px 0;
+}
+
+.alert-danger {
+background: #f8d7da;
+color: #721c24;
+border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+background: #d4edda;
+color: #155724;
+border: 1px solid #c3e6cb;
+}
+
+.alert-info {
+background: #d1ecf1;
+color: #0c5460;
+border: 1px solid #bee5eb;
+}
+
+/* Selected departments summary */
+.selected-summary {
+margin-top: 10px;
+font-size: 13px;
+color: #666;
+background: white;
+padding: 8px 12px;
+border-radius: 6px;
+border: 1px solid #e0e0e0;
+}
+
+.selected-badge {
+display: inline-block;
+background: #e7f1ff;
+color: #667eea;
+padding: 4px 10px;
+border-radius: 50px;
+font-size: 12px;
+margin: 2px;
+}
+</style>
 </head>
 <body>
-    <div class="overlay"></div>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>Create Account</h1>
-            <p>Join us by creating your free account</p>
+<div class="login-container">
+<div class="login-header">
+<h1>Create Account</h1>
+<p>Join us by creating your free account</p>
+</div>
+
+<?php if($err): ?>
+<div class="alert alert-danger">
+<i class="fas fa-exclamation-circle"></i>
+<?= htmlspecialchars($err) ?>
+</div>
+<?php endif; ?>
+
+<?php if($success && !$showOTP): ?>
+<div class="alert alert-success">
+<i class="fas fa-check-circle"></i>
+<?= $success ?>
+</div>
+<?php endif; ?>
+
+<form class="login-form" method="POST" id="registerForm">
+<?php if(!$showOTP): ?>
+<!-- Registration Form -->
+<div class="form-row">
+    <div class="form-group half">
+        <label for="fname">First Name</label>
+        <div class="input-with-icon">
+            <i class="fas fa-user"></i>
+            <input type="text" id="fname" name="fname" class="form-control" 
+                    placeholder="Enter your first name" 
+                    value="<?= isset($_POST['fname']) ? htmlspecialchars($_POST['fname']) : '' ?>" required>
         </div>
     </div>
     

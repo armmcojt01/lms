@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/auth.php';
 require_once __DIR__ . '/../inc/functions.php';
-require_once __DIR__ . '/../inc/completecoursemailer.php'; // ADD THIS LINE
+
 
 require_login();
 $u = current_user();
@@ -91,12 +91,12 @@ $stmt->execute([$enrollment['id']]);
 $studentName = trim($u['fname'] . ' ' . $u['lname']);
 if (empty($studentName)) $studentName = $u['username'];
 
-// SEND COMPLETION EMAIL
-$emailResult = sendCourseCompletionEmailSimple(
-$u['email'],
-$studentName,
-$course['title']
-);
+// SEND COMPLETION EMAIL PROTOTYPE - REPLACE WITH ACTUAL FUNCTION
+// $emailResult = sendCourseCompletionEmailSimple(
+// $u['email'],
+// $studentName,
+// $course['title']
+// );
 
 // Log email result
 if ($emailResult['success']) {

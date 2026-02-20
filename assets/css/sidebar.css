@@ -366,7 +366,7 @@ span.text-link:hover {
 
 .profile-details-mini small {
     display: flex;
-    align-items: center;
+    align-items: left;
     gap: 5px;
     color: rgba(255, 255, 255, 0.8);
     font-size: 12px;

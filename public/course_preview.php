@@ -302,7 +302,7 @@ You can only be enrolled in one course at a time. Please complete or drop your c
 </button>
 <small class="text-muted d-block mt-2">
 <i class="fas fa-info-circle"></i> You are already enrolled in this course. 
-<a href="<?= BASE_URL ?>/public/course_view.php?id=<?= $course['id'] ?>" class="text-primary">Continue Learning</a>
+<class="text-primary">Continue Learning</a>
  </small>
                     
 <?php elseif ($hasActiveEnrollment): ?>

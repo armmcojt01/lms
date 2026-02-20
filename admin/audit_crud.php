@@ -21,7 +21,7 @@ $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Prepare User
 
 $stmt = $pdo->prepare("
-    SELECT u.id, u.username, u.role, u.fname
+    SELECT u.id, u.username, u.role, u.fname,u.departments
     FROM users u 
     ORDER BY u.id DESC
 ");
@@ -37,6 +37,14 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute();
 $edit = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->prepare("
+    SELECT d.id, d.name
+    FROM departments d 
+    ORDER BY d.id DESC
+");
+$stmt->execute();
+$departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 ?>
@@ -80,6 +88,7 @@ $edit = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <!-- call user id -->
 <?php foreach ($courses as $course): ?>
     <?php foreach ($users as $user): ?>
+            <?php foreach ($departments as $department): ?>
 <tr>
 
  <h5 class="mb-3"><td><?= htmlspecialchars($course['id']) ?></td></h5>
@@ -88,11 +97,12 @@ $edit = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <td><?= htmlspecialchars($user['fname']) ?></td>
 <td><?= htmlspecialchars($course['created_at']) ?></td>
 <td><?= htmlspecialchars($user['role']) ?></td>
-<td><?= htmlspecialchars('null') ?></td>
+<td><?= htmlspecialchars($department['name']) ?></td>
 <td><?= htmlspecialchars('DATE - NULL') ?></td>
 </tr>
     </div>
 <!-- close call -->
+<?php endforeach; ?>
 <?php endforeach; ?>
 <?php endforeach; ?>
 </tbody>

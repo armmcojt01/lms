@@ -30,7 +30,6 @@ if ($act === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $lname    = $_POST['lname'];
     $email    = $_POST['email'];
     $role     = $_POST['role'];
-    $departments = $_POST['departments'] ?? null;
 
     // Validate email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -56,10 +55,10 @@ if ($act === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Insert user
         $stmt = $pdo->prepare(
-            "INSERT INTO users (username,password,fname,lname,email,departments,role,status,created_at)
-             VALUES (?,?,?,?,?,?,?,'confirmed',NOW())"
+            "INSERT INTO users (username,password,fname,lname,email,role,status,created_at)
+             VALUES (?,?,?,?,?,?,'confirmed',NOW())"
         );
-        $stmt->execute([$username, $hash, $fname, $lname, $email, $departments, $role]);
+        $stmt->execute([$username, $hash, $fname, $lname, $email, $role]);
         
         // Get the new user ID
         $newUserId = $pdo->lastInsertId();
@@ -188,22 +187,6 @@ $pendingUsers = $pdo->query("SELECT * FROM users WHERE status = 'pending' ORDER 
 $totalUsers = count($allUsers);
 $totalConfirmed = count($confirmedUsers);
 $totalPending = count($pendingUsers);
-
-//show departments testing//////////////////////////////////////////////////////////////////////////////////
-$stmt = $pdo->prepare("
-SELECT d.id, d.name 
-FROM departments d 
-ORDER BY d.name ASC
-");
-$stmt->execute();
-$departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-
-
-
-
-
-
 ?>
 
 <!doctype html>
@@ -226,8 +209,8 @@ $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php include __DIR__ . '/../inc/sidebar.php'; ?>
     </div>
 
-    <div class="main-content-wrapper">
-        <div class="container py-9">
+    <div class="main">
+        <div class="container py-4">
          
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -297,46 +280,13 @@ $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </select>
                             </div>
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <!-- dropdown for department -->
-
-
-<select name="departments" class="form-control mb-3" >
-    <?php foreach($departments as $dept): ?>
-        <option value="">Select Department</option>
-        <option value="<?= htmlspecialchars($dept['id']) ?>"><?= htmlspecialchars($dept['name']) ?></option>
-    <?php endforeach; ?>
-</select>
-
-<!-- checkbox -->
-
-  
-
- 
- 
-
-    <div class="mt-3">
-<button type="submit" class="btn btn-primary">Create User</button>
-<a href="users_crud.php" class="btn btn-secondary">Cancel</a>
-</div>
-</form>
-</div>
-<?php endif; ?>
-
+                        <div class="mt-3">
+                            <button class="btn btn-primary">Create User</button>
+                            <a href="users_crud.php" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            <?php endif; ?>
 
             <!-- edit userpform -->
             <?php if ($act === 'edit' && isset($user)): ?>
@@ -449,7 +399,7 @@ class="btn btn-success btn-sm">
 <a href="?act=reject&id=<?= $u['id'] ?>" 
 onclick="return confirm('Reject and delete <?= htmlspecialchars($u['username']) ?>?')" 
 class="btn btn-danger btn-sm">
-<!-- <i class="fas fa-times"></i> Reject  missing -->  sd
+<i class="fas fa-times"></i> Reject
 </a>
 </td>
 </tr>
@@ -478,7 +428,6 @@ Confirmed Users (<?= count($confirmedUsers) ?>)
 <th>ID</th>
 <th>Username</th>
  <th>Full Name</th>
- <th>Department</th>
 <th>Email</th>
 <th>Role</th>
 <th>Joined</th>
@@ -495,16 +444,11 @@ Confirmed Users (<?= count($confirmedUsers) ?>)
 </tr>
 <?php else: ?>
 <?php foreach ($confirmedUsers as $u): ?>
-    <?php foreach ($departments as $dept): ?>
-        <?php if ($u['departments'] == $dept['id']): ?> 
 <tr>
 <td><span class="fw-bold">#<?= $u['id'] ?></span></td>
 <td><?= htmlspecialchars($u['username']) ?></td>
 <td><?= htmlspecialchars($u['fname'] . ' ' . $u['lname']) ?></td>
-<td><?= htmlspecialchars($dept['name'] ?? 'No Department') ?></td>
-
 <td><?= htmlspecialchars($u['email']) ?></td>
-
 <td>
 <?php if ($u['role'] === 'admin'): ?>
 <span class="badge bg-danger">Admin</span>
@@ -531,12 +475,8 @@ class="btn btn-danger btn-sm">
  </a>
  </td>
         </tr>
-        <?php endif; ?>
-    <?php endforeach; ?>
         <?php endforeach; ?>
-    
-         
-          <?php endif; ?>
+         <?php endif; ?>
          </tbody>
          </table>
          </div>

@@ -202,6 +202,10 @@ $courses = $stmt->fetchAll();
 <?php if ($act === 'addform' || $act === 'edit'): ?>
 <?php $editing = ($act === 'edit'); ?>
 
+
+
+
+
 <div class="card p-4 mb-4 shadow-sm bg-white rounded">
 <form method="post" enctype="multipart/form-data">
 
@@ -266,10 +270,20 @@ $courses = $stmt->fetchAll();
     <a href="courses_crud.php" class="btn btn-secondary ms-2">Back</a>
 </form>
 </div>
+<!-- korse -->
+
+
+
+
+
+
+
+
 
 <?php else: ?>
 
 <a href="?act=addform" class="btn btn-success mb-3">Add New Course</a>
+
 
 <div class="modern-courses-grid">
     <?php foreach ($courses as $c): ?>
@@ -309,8 +323,7 @@ $courses = $stmt->fetchAll();
         </div>
     <?php endforeach; ?>
 
-    
-</div>
+    </div>
 
 <?php endif; ?>
 </div>
