@@ -11,16 +11,12 @@ if(!defined('BASE_URL')) {
 }
 
 // Function to get role icon - WITH DEFAULT VALUE
-if (!function_exists('get_role_icon')) {
-    function get_role_icon($role) {
-        switch ($role) {
-            case 'superadmin': return 'fas fa-crown';
-            case 'admin': return 'fas fa-user-shield';
-            case 'proponent': return 'fas fa-chalkboard-teacher';
-            case 'user': return 'fas fa-user';
-            default: return 'fas fa-user';
-        }
-    }
+function get_role_icon($role = '') {
+    $icons = [
+        'admin' => 'fa-user-shield',
+        'user' => 'fa-user-graduate',
+    ];
+    return $icons[$role] ?? 'fa-user';
 }
 
 ?>
@@ -96,8 +92,8 @@ if (!function_exists('get_role_icon')) {
             <?php endif; ?>
             <?php if($u && (is_proponent() || is_admin() || is_superadmin())): ?>
                <li class="nav-item">
-                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php?act=addform">
-                    <i class="fa fa-plus"></i> managekors
+                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php">
+                    <i class="fa fa-plus"></i> Manage Courses
                 </a>
               
         
@@ -122,9 +118,7 @@ if (!function_exists('get_role_icon')) {
                             <i class="fa fa-newspaper"></i> News
                         </a>
                     </li>
-                    <li class="nav-item">
-                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php?act=addform">
-                    <i class="fa fa-plus"></i> Add Course
+                    
                 </a>
                 <?php endif; ?>
 

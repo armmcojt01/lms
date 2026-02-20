@@ -61,9 +61,6 @@ if ($act === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         $stmt->execute([$username, $hash, $fname, $lname, $email, $departments, $role]);
         
-
-
-        
         // Get the new user ID
         $newUserId = $pdo->lastInsertId();
         
@@ -202,6 +199,11 @@ $stmt->execute();
 $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
+
+
+
+
+
 ?>
 
 <!doctype html>
@@ -297,18 +299,34 @@ $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
 
-<label>Department</label>
-checkbox
-<div class="mb-3">      
-<?php foreach ($departments as $dept): ?>
-<div class="form-check">
-<input class="form-check-input" type="checkbox" name="departments[]" value="<?= $dept['id'] ?>" id="dept<?= $dept['id'] ?>">
-<label class="form-check-label" for="dept<?= $dept['id'] ?>">
-    <?= htmlspecialchars($dept['name']) ?>
-</label>
-</div>
-<?php endforeach; ?>
-</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- dropdown for department -->
+
+
+<select name="departments" class="form-control mb-3" >
+    <?php foreach($departments as $dept): ?>
+        <option value="">Select Department</option>
+        <option value="<?= htmlspecialchars($dept['id']) ?>"><?= htmlspecialchars($dept['name']) ?></option>
+    <?php endforeach; ?>
+</select>
+
+<!-- checkbox -->
+
+  
+
  
  
 
@@ -485,9 +503,8 @@ Confirmed Users (<?= count($confirmedUsers) ?>)
 <td><?= htmlspecialchars($u['username']) ?></td>
 <td><?= htmlspecialchars($u['fname'] . ' ' . $u['lname']) ?></td>
 <td><?= htmlspecialchars($dept['name'] ?? 'No Department') ?></td>
+
 <td><?= htmlspecialchars($u['email']) ?></td>
-
-
 
 <td>
 <?php if ($u['role'] === 'admin'): ?>
