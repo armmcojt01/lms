@@ -11,16 +11,12 @@ if(!defined('BASE_URL')) {
 }
 
 // Function to get role icon - WITH DEFAULT VALUE
-if (!function_exists('get_role_icon')) {
-    function get_role_icon($role) {
-        switch ($role) {
-            case 'superadmin': return 'fas fa-crown';
-            case 'admin': return 'fas fa-user-shield';
-            case 'proponent': return 'fas fa-chalkboard-teacher';
-            case 'user': return 'fas fa-user';
-            default: return 'fas fa-user';
-        }
-    }
+function get_role_icon($role = '') {
+    $icons = [
+        'admin' => 'fa-user-shield',
+        'user' => 'fa-user-graduate',
+    ];
+    return $icons[$role] ?? 'fa-user';
 }
 
 ?>
@@ -132,6 +128,30 @@ if (!function_exists('get_role_icon')) {
                             <i class="fa fa-users"></i> Audit Logs
                         </a>
                          <?php endif; ?>
+
+
+<?php if($u && (is_admin() || is_superadmin())): ?>
+    <li class="nav-item">
+        <a class="nav-link" href="<?= BASE_URL ?>/admin/admin_contacts.php">
+            <i class="fa fa-envelope"></i> Contact Messages
+            <?php
+            // Get unread count
+            $countStmt = $pdo->prepare("SELECT COUNT(*) FROM contact_messages WHERE is_read = 0");
+            $countStmt->execute();
+            $unread = $countStmt->fetchColumn();
+            if ($unread > 0):
+            ?>
+                <span class="badge bg-danger float-end"><?= $unread ?></span>
+            <?php endif; ?>
+        </a>
+    </li>
+<?php endif; ?>
+
+
+
+
+
+
 
                 <li class="nav-item">
                     <a class="nav-link" href="<?= BASE_URL ?>/public/logout.php">

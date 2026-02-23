@@ -123,4 +123,4 @@ INSERT INTO departments (name) VALUES
 ('Elderly Services Department'),
 ('Gastroenterology'),
 ('General Surgery'),
-('Gynecology');                         
+('Gynecology');                        
