@@ -596,16 +596,19 @@ $deptNames = !empty($u['department_names']) ? explode('||', $u['department_names
 <td><span class="fw-bold">#<?= $u['id'] ?></span></td>
 <td><?= htmlspecialchars($u['username']) ?></td>
 <td><?= htmlspecialchars($u['fname'] . ' ' . $u['lname']) ?></td>
-<td>
-<?php if (!empty($deptNames)): ?>
-<?php foreach($deptNames as $dept): ?>
-<span class="badge" style="background-color: #667eea; color: white; margin: 2px; padding: 5px 8px;">
-<?= htmlspecialchars($dept) ?>
-</span>
-<?php endforeach; ?>
-<?php else: ?>
-<span class="text-muted">No Department</span>
-<?php endif; ?>
+<td data-departments="<?= htmlspecialchars(implode(', ', $deptNames)) ?>">
+    <?php if (!empty($deptNames)): ?>
+        <?php foreach(array_slice($deptNames, 0, 1) as $dept): ?>
+            <span class="badge" style="background-color: #667eea; color: white; margin: 2px; padding: 5px 8px;">
+                <?= htmlspecialchars($dept) ?>
+            </span>
+        <?php endforeach; ?>
+        <?php if (count($deptNames) > 2): ?>
+            <span class="badge bg-secondary">+<?= count($deptNames) - 2 ?> more</span>
+        <?php endif; ?>
+    <?php else: ?>
+        <span class="text-muted">No Department</span>
+    <?php endif; ?>
 </td>
 <td><?= htmlspecialchars($u['email']) ?></td>
 <td>

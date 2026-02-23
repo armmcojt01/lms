@@ -11,15 +11,47 @@
         .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .status-pending { background: #ffc107; }
         .status-confirmed { background: #28a745; }
-        .fixed-table {table-layout: fixed; width: 100%;}
-        .fixed-table th,.fixed-table td {overflow: hidden;text-overflow: ellipsis;white-space: nowrap;} 
+        .fixed-table {table-layout: fixed; width: 100%; overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+        .fixed-table th ,
+/* Custom tooltip for department badges */
+.fixed-table td:nth-child(4) {
+    position: relative;
+    cursor: help;
+}
+
+.fixed-table td:nth-child(4):hover::before {
+    content: attr(data-departments);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.fixed-table td:nth-child(4):hover::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #333;
+    margin-bottom: -6px;
+}
         .fixed-table td:nth-child(1) { width: 30%; } /* Title column - adjust as needed */
         .fixed-table th:nth-child(1) { width: 5%; } /* ID */
         .fixed-table th:nth-child(2) { width: 10%; } /* Username */
         .fixed-table th:nth-child(3) { width: 20%; } /* Full name */
         .fixed-table th:nth-child(4) { width: 20%; } /* Departments */
-        .fixed-table th:nth-child(5) { width: 20%; } /* Email */
-        .fixed-table th:nth-child(6) { width: 7%; } /* Role */
+        .fixed-table th:nth-child(5) { width: 15%; } /* Email */
+        .fixed-table th:nth-child(6) { width: 10%; } /* Role */
         .fixed-table th:nth-child(7) { width: 10%; } /* joined */
         .fixed-table th:nth-child(8) { width: 10%; } /* Status */
         .fixed-table th:nth-child(9) { width: 20%; } /* Actions */

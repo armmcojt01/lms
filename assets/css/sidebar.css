@@ -78,7 +78,7 @@
     padding: 8px 8px;
     text-align: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 20px;
+    margin-bottom: 50px;
 }
 
 .sidebar-logo a {
@@ -90,6 +90,7 @@
     height: auto;
     display: block;
     margin: 0 auto;
+    margin-bottom: 35px;
 }
 
 /* Navigation items */
@@ -716,11 +717,12 @@ span.text-link:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
 }
 
 .profile-details-mini small {
     display: flex;
-    align-items: center;
+    align-items: left;
     gap: 5px;
     color: rgba(255, 255, 255, 0.8);
     font-size: 12px;

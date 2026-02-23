@@ -245,7 +245,7 @@ $enrollDisabledReason = 'Please Complete current course before enrolling in a ne
 alt="<?= htmlspecialchars($c['title']) ?>"
 onerror="this.src='<?= BASE_URL ?>/uploads/images/Course Image.png'">
                         
-                        <!-- lock oberlay  -->
+                        <!-- lock overlay  -->
 <?php if (!$canEnroll && $enroll_status === 'notenrolled' && !$isAdmin): ?>
 <div class="lock-overlay">
 <i class="fas fa-lock"></i>
@@ -267,10 +267,6 @@ onerror="this.src='<?= BASE_URL ?>/uploads/images/Course Image.png'">
                             <?php elseif ($c['display_status'] === 'expired' || $isExpired): ?>
                                 <span class="modern-badge badge-expired">
                                     <i class="fas fa-hourglass-end"></i> Expired
-                                </span>
-                            <?php elseif ($c['display_status'] === 'notenrolled'): ?>
-                                <span class="modern-badge badge-notenrolled">
-                                    <i class="fas fa-clock"></i> Not Enrolled
                                 </span>
                             <?php endif; ?>
                         </div>
@@ -355,7 +351,7 @@ class="modern-btn-primary modern-btn-sm">
 <?php if ($canEnroll || $isAdmin): ?>
                          <!-- testing pero second part -->
  <a href="<?= BASE_URL ?>/public/enroll.php?course_id=<?= $c['id'] ?>"
-class="modern-btn-success modern-btn-sm"
+class="modern-btn-primary modern-btn-sm"
 onclick="return confirm('Enroll in this course?');">
 <i class="fas fa-sign-in-alt"></i> Enroll Now
 </a>

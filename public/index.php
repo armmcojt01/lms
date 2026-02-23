@@ -29,7 +29,7 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to SkillUp - Learning Management System</title>
+    <title>Welcome to ARMMC - Learning Management System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Sen:wght@400..800&display=swap" rel="stylesheet">
@@ -146,7 +146,7 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
         <!-- Footer -->
         <footer class="welcome-footer">
-            <p>&copy; <?= date('Y') ?> SkillHub Learning Management System. All rights reserved.</p>
+            <p>&copy; <?= date('Y') ?> ARMMC Learning Management System. All rights reserved.</p>
             <div class="footer-links" style="margin-top: 1px;">
                 <a href="#">Privacy Policy</a>
                 <a href="#">Terms of Service</a>
