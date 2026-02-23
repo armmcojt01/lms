@@ -48,7 +48,7 @@ function uploadFile($input, $dir, $allowed = []) {
  * Returns true for admins OR if user owns the course
  */
 function canModifyCourse($course_id, $pdo) {
-    if (is_admin()) {
+    if (is_admin() || is_superadmin()) {
         return true;
     }
     
@@ -129,7 +129,8 @@ if ($act === 'edit' && $id) {
                 expires_at  = :expires_at,
                 thumbnail   = :thumbnail,
                 file_pdf    = :pdf,
-                file_video  = :video
+                file_video  = :video,
+                updated_at  = NOW()
             WHERE id = :id
         ");
 
@@ -166,10 +167,23 @@ if ($act === 'delete' && $id) {
 }
 
 /* =========================
-   FETCH COURSES
+   FETCH COURSES WITH UPDATED AT
 ========================= */
 
-$stmt = $pdo->query("SELECT c.*, u.username FROM courses c LEFT JOIN users u ON c.proponent_id = u.id ORDER BY c.created_at DESC");
+// First, check if updated_at column exists and add it if not
+try {
+    $pdo->query("SELECT updated_at FROM courses LIMIT 1");
+} catch (Exception $e) {
+    // Column doesn't exist, add it
+    $pdo->exec("ALTER TABLE courses ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL AFTER created_at");
+}
+
+$stmt = $pdo->query("
+    SELECT c.*, u.username 
+    FROM courses c 
+    LEFT JOIN users u ON c.proponent_id = u.id 
+    ORDER BY c.updated_at DESC, c.created_at DESC
+");
 $courses = $stmt->fetchAll();
 ?>
 
@@ -289,9 +303,24 @@ $courses = $stmt->fetchAll();
                 $expiryDate = $c['expires_at']
                     ? date('M, d, Y', strtotime($c['expires_at']))
                     : 'No expiry';
+                
+                // Format updated date
+                $updatedDate = !empty($c['updated_at']) 
+                    ? date('M, d, Y h:i A', strtotime($c['updated_at'])) 
+                    : 'Never';
                 ?>
             <p><strong>Start:</strong> <span><?= $startDate ?></span></p>
             <p><strong>Expires:</strong> <span><?= $expiryDate ?></span></p>
+            
+            <!-- NEW: Date Edited field -->
+            <p><strong>Last Edited:</strong> 
+                <span class="<?= $c['updated_at'] ? 'text-primary' : 'text-muted' ?>">
+                    <?= $updatedDate ?>
+                    <?php if($c['updated_at']): ?>
+                        <i class="fas fa-pen-alt ms-1" style="font-size: 11px;"></i>
+                    <?php endif; ?>
+                </span>
+            </p>
             </div>
         <div class="modern-card-actions">
             <a href="<?= BASE_URL ?>/proponent/view_course.php?id=<?= $c['id'] ?>" class="modern-btn-primary modern-btn-sm">View</a>
@@ -307,8 +336,6 @@ $courses = $stmt->fetchAll();
         </div>
         </div>
     <?php endforeach; ?>
-
-    
 </div>
 
 <?php endif; ?>

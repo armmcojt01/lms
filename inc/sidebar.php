@@ -92,8 +92,8 @@ function get_role_icon($role = '') {
             <?php endif; ?>
             <?php if($u && (is_proponent() || is_admin() || is_superadmin())): ?>
                <li class="nav-item">
-                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php">
-                    <i class="fa fa-plus"></i> Manage Courses
+                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php?act=addform">
+                    <i class="fa fa-plus"></i> managekors
                 </a>
               
         
@@ -118,7 +118,9 @@ function get_role_icon($role = '') {
                             <i class="fa fa-newspaper"></i> News
                         </a>
                     </li>
-                    
+                    <li class="nav-item">
+                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php?act=addform">
+                    <i class="fa fa-plus"></i> Add Course
                 </a>
                 <?php endif; ?>
 
@@ -128,6 +130,30 @@ function get_role_icon($role = '') {
                             <i class="fa fa-users"></i> Audit Logs
                         </a>
                          <?php endif; ?>
+
+
+<?php if($u && (is_admin() || is_superadmin())): ?>
+    <li class="nav-item">
+        <a class="nav-link" href="<?= BASE_URL ?>/admin/admin_contacts.php">
+            <i class="fa fa-envelope"></i> Contact Messages
+            <?php
+            // Get unread count
+            $countStmt = $pdo->prepare("SELECT COUNT(*) FROM contact_messages WHERE is_read = 0");
+            $countStmt->execute();
+            $unread = $countStmt->fetchColumn();
+            if ($unread > 0):
+            ?>
+                <span class="badge bg-danger float-end"><?= $unread ?></span>
+            <?php endif; ?>
+        </a>
+    </li>
+<?php endif; ?>
+
+
+
+
+
+
 
                 <li class="nav-item">
                     <a class="nav-link" href="<?= BASE_URL ?>/public/logout.php">
