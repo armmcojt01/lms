@@ -8,50 +8,36 @@ $userId = $user['id'] ?? 0;
 $courseId = intval($_GET['id'] ?? 0);
 if(!$courseId) die('Invalid course ID');
 
-// Fetch course
-$stmt = $pdo->prepare('SELECT c.*, u.fname, u.lname FROM courses c LEFT JOIN users u ON c.proponent_id = u.id WHERE c.id = ?');
-$stmt->execute([$courseId]);
+// Fetch course with enrollment info for current user
+$stmt = $pdo->prepare('
+    SELECT 
+        c.*, 
+        u.fname, 
+        u.lname,
+        CASE 
+            WHEN c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN "expired"
+            ELSE COALESCE(e.status, "notenrolled")
+        END AS enroll_status,
+        e.progress,
+        e.total_time_seconds,
+        e.enrolled_at
+    FROM courses c 
+    LEFT JOIN users u ON c.proponent_id = u.id 
+    LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
+    WHERE c.id = ?
+');
+$stmt->execute([$userId, $courseId]);
 $course = $stmt->fetch();
 if(!$course) die('Course not found');
 
-// Check if course is expired
-$isExpired = false;
-if (!empty($course['expires_at'])) {
-    $expiresAt = strtotime($course['expires_at']);
-    $now = time();
-    $isExpired = ($expiresAt < $now);
-}
+// Debug output to check the values (remove after testing)
+/*
+echo "Course expires_at: " . $course['expires_at'] . "<br>";
+echo "Current time: " . date('Y-m-d H:i:s') . "<br>";
+echo "Enroll status: " . $course['enroll_status'] . "<br>";
+*/
 
-// CHECK IF USER HAS ANY ACTIVE ENROLLMENT
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as active_count 
-    FROM enrollments 
-    WHERE user_id = ? AND status = 'ongoing'
-");
-$stmt->execute([$userId]);
-$activeEnrollment = $stmt->fetch(PDO::FETCH_ASSOC);
-$hasActiveEnrollment = ($activeEnrollment['active_count'] > 0);
-
-// Get the active course details if exists
-$activeCourseId = null;
-$activeCourseTitle = null;
-if ($hasActiveEnrollment) {
-    $stmt = $pdo->prepare("
-        SELECT c.id, c.title 
-        FROM enrollments e
-        JOIN courses c ON e.course_id = c.id
-        WHERE e.user_id = ? AND e.status = 'ongoing'
-        LIMIT 1
-    ");
-    $stmt->execute([$userId]);
-    $activeCourse = $stmt->fetch();
-    if ($activeCourse) {
-        $activeCourseId = $activeCourse['id'];
-        $activeCourseTitle = $activeCourse['title'];
-    }
-}
-
-// Fetch all courses with enrollment info
+// Fetch all courses with enrollment info (for other queries you might need)
 $stmt = $pdo->prepare("
     SELECT 
         c.id, 
@@ -62,7 +48,7 @@ $stmt = $pdo->prepare("
         c.created_at, 
         c.expires_at AS course_expires_at,
         CASE 
-            WHEN e.status = 'ongoing' AND c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
+            WHEN c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
             ELSE COALESCE(e.status, 'notenrolled')
         END AS enroll_status,
         e.progress, 
@@ -77,20 +63,12 @@ $stmt = $pdo->prepare("
 $stmt->execute([$userId]);
 $courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get enrollment status for this specific course
-$enrollStatus = 'notenrolled';
-foreach ($courses as $c) {
-    if ($c['id'] == $courseId) {
-        $enrollStatus = $c['enroll_status'];
-        break;
-    }
-}
-
+// Fetch user's enrolled courses
 $stmt = $pdo->prepare("
     SELECT c.id, c.title, c.description, c.thumbnail, c.created_at, c.expires_at,
            e.progress, e.total_time_seconds, 
            CASE 
-               WHEN e.status = 'ongoing' AND c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
+               WHEN c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
                ELSE e.status 
            END AS enroll_status
     FROM courses c
@@ -98,8 +76,9 @@ $stmt = $pdo->prepare("
     WHERE e.user_id = ?
     ORDER BY c.id DESC
 ");
-$stmt->execute([$userId]);
-$myCourses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// $stmt->execute([$userId]);
+// $myCourses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle enrollment POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll'])) {
