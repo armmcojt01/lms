@@ -1,13 +1,19 @@
-@ -1,343 +1,342 @@
 <?php
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/auth.php';
+
 require_login();
+
+// Get database connection
+global $pdo;
 
 $user = $_SESSION['user'];
 $userId = $user['id'] ?? 0;
 $courseId = intval($_GET['id'] ?? 0);
-if(!$courseId) die('Invalid course ID');
+
+if (!$courseId) {
+    die('Invalid course ID');
+}
 
 // Fetch course with enrollment info for current user
 $stmt = $pdo->prepare('
@@ -15,28 +21,64 @@ $stmt = $pdo->prepare('
         c.*, 
         u.fname, 
         u.lname,
-        CASE 
-            WHEN c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN "expired"
-            ELSE COALESCE(e.status, "notenrolled")
-        END AS enroll_status,
+        e.status AS enroll_status,
         e.progress,
         e.total_time_seconds,
         e.enrolled_at
     FROM courses c 
     LEFT JOIN users u ON c.proponent_id = u.id 
     LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
-    WHERE c.id = ?
+    WHERE c.id = ? AND c.is_active = 1
 ');
 $stmt->execute([$userId, $courseId]);
 $course = $stmt->fetch();
-if(!$course) die('Course not found');
 
-// Debug output to check the values (remove after testing)
-/*
-echo "Course expires_at: " . $course['expires_at'] . "<br>";
-echo "Current time: " . date('Y-m-d H:i:s') . "<br>";
-echo "Enroll status: " . $course['enroll_status'] . "<br>";
-*/
+if (!$course) {
+    die('Course not found');
+}
+
+// Check if course is expired
+$isExpired = false;
+if (!empty($course['expires_at'])) {
+    $expiresAt = strtotime($course['expires_at']);
+    $now = time();
+    $isExpired = ($expiresAt < $now);
+}
+
+// Set enrollment status (override if expired)
+$enrollStatus = $course['enroll_status'] ?? 'notenrolled';
+if ($isExpired && $enrollStatus === 'ongoing') {
+    $enrollStatus = 'expired';
+}
+
+// CHECK IF USER HAS ANY ACTIVE ENROLLMENT (excluding current course)
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) as active_count 
+    FROM enrollments 
+    WHERE user_id = ? AND status = 'ongoing' AND course_id != ?
+");
+$stmt->execute([$userId, $courseId]);
+$activeEnrollment = $stmt->fetch(PDO::FETCH_ASSOC);
+$hasActiveEnrollment = ($activeEnrollment['active_count'] > 0);
+
+// Get the active course details if exists
+$activeCourseId = null;
+$activeCourseTitle = null;
+if ($hasActiveEnrollment) {
+    $stmt = $pdo->prepare("
+        SELECT c.id, c.title 
+        FROM enrollments e
+        JOIN courses c ON e.course_id = c.id
+        WHERE e.user_id = ? AND e.status = 'ongoing' AND e.course_id != ?
+        LIMIT 1
+    ");
+    $stmt->execute([$userId, $courseId]);
+    $activeCourse = $stmt->fetch();
+    if ($activeCourse) {
+        $activeCourseId = $activeCourse['id'];
+        $activeCourseTitle = $activeCourse['title'];
+    }
+}
 
 // Fetch all courses with enrollment info (for other queries you might need)
 $stmt = $pdo->prepare("
@@ -77,9 +119,8 @@ $stmt = $pdo->prepare("
     WHERE e.user_id = ?
     ORDER BY c.id DESC
 ");
-
-// $stmt->execute([$userId]);
-// $myCourses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt->execute([$userId]);
+$myCourses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle enrollment POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll'])) {
@@ -148,16 +189,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll'])) {
             pointer-events: none;
         }
         .btn-enrolled {
-            background-color: #970e6e !important;
-            border-color: #970e6e !important;
+            background-color: #28a745 !important;
+            border-color: #28a745 !important;
             color: white !important;
             cursor: not-allowed !important;
             opacity: 0.65;
             pointer-events: none;
         }
         .btn-locked {
-            background-color: #7e0026 !important;
-            border-color: #7e0026 !important;
+            background-color: #ffc107 !important;
+            border-color: #ffc107 !important;
             color: #212529 !important;
             cursor: not-allowed !important;
             opacity: 0.65;
@@ -217,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll'])) {
 <?php unset($_SESSION['error']); ?>
 <?php endif; ?>
 
-        <!-- pls gumana ka warning if user is alredy enroll sa ibang kors-->
+        <!-- Warning if user is already enrolled in another course -->
 <?php if ($hasActiveEnrollment && $enrollStatus !== 'ongoing' && !$isExpired): ?>
 <div class="active-course-alert">
 <i class="fas fa-info-circle"></i> 
@@ -282,7 +323,7 @@ You can only be enrolled in one course at a time. Please complete or drop your c
 </button>
 <small class="text-muted d-block mt-2">
 <i class="fas fa-info-circle"></i> You are already enrolled in this course. 
-<class="text-primary">Continue Learning</a>
+<a href="<?= BASE_URL ?>/public/course_view.php?id=<?= $course['id'] ?>" class="text-primary">Continue Learning</a>
  </small>
                     
 <?php elseif ($hasActiveEnrollment): ?>
@@ -312,7 +353,7 @@ You can only be enrolled in one course at a time. Please complete or drop your c
 </div>
 </div>
 
-<!-- test Preview Section -->
+<!-- Course Preview Section -->
 <div class="mt-4">
 <h4>Course Preview</h4>
 <div class="modern-course-info-content p-3 border rounded">
@@ -323,21 +364,13 @@ You can only be enrolled in one course at a time. Please complete or drop your c
 
 <script>
 $(document).ready(function() {
-const isExpired = <?= $isExpired ? 'true' : 'false' ?>;
-const enrollStatus = "<?= $enrollStatus ?>";
-const hasActiveEnrollment = <?= $hasActiveEnrollment ? 'true' : 'false' ?>;
-        
-if (isExpired || hasActiveEnrollment) {
-$('.btn-primary').addClass('disabled').attr('disabled', true);
-}
-        
-        // Confirmation for enrollment
- $('button[name="enroll"]').click(function(e) {
-if (!confirm('Are you sure you want to enroll in this course? You can only be enrolled in one course at a time.')) {
-e.preventDefault();
-return false;
-}
-});
+    // Confirmation for enrollment
+    $('button[name="enroll"]').click(function(e) {
+        if (!confirm('Are you sure you want to enroll in this course? You can only be enrolled in one course at a time.')) {
+            e.preventDefault();
+            return false;
+        }
+    });
 });
 </script>
 </body>

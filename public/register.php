@@ -14,17 +14,6 @@ $err = '';
 $success = '';
 $showOTP = false;
 
-// Department list - This can be moved to db in future??? ata 
-$departments = [
-'Anesthetics',
-'Breast Screening',
-'cardiology',
-'Ear,nose and throat (ENT)',
-'Elderly services department',
-'Gastroenerology',
-'General Surgery',
-'Gynecology'
-];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (isset($_POST['otp_verify'])) {
@@ -45,12 +34,8 @@ $showOTP = true;
 // OTP is correct! Create the user account
 $hash = password_hash($userData['password'], PASSWORD_DEFAULT);
 
-// Convert departments array to JSON for storage
-$departmentsJson = json_encode($userData['departments'] ?? []);
-$course = $userData['course'] ?? '';
-
-// Insert into database with departments as JSON
-$stmt = $pdo->prepare('INSERT INTO users (username, password, fname, lname, email, departments, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "user", "pending", NOW())');
+// Insert into database 
+$stmt = $pdo->prepare('INSERT INTO users (username, password, fname, lname, email, role, status, created_at) VALUES (?, ?, ?, ?, ?, "user", "pending", NOW())');
 
 if ($stmt->execute([
 $userData['username'], 
@@ -58,7 +43,6 @@ $hash,
 $userData['fname'], 
 $userData['lname'], 
 $userData['email'],
-$departmentsJson,
 
 ])) {
 // Clear session data
@@ -106,12 +90,11 @@ $password = $_POST['password'] ?? '';
 $fname = trim($_POST['fname'] ?? '');
 $lname = trim($_POST['lname'] ?? '');
 $email = trim($_POST['email'] ?? '');
-$departments = $_POST['departments'] ?? []; // This will be an array
 $course = trim($_POST['course'] ?? '');
 
 // Validation
-if (!$username || !$password || !$email || empty($departments)) { 
-$err = 'All fields are required. Please select at least one department.'; 
+if (!$username || !$password || !$email) { 
+$err = 'All fields are required.'; 
 } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 $err = 'Invalid email format';
 } elseif (strlen($password) < 8) {
@@ -126,14 +109,13 @@ $err = 'Username or email already exists';
 // Generate OTP
 $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
-// Store in session with departments array
+// store session
 $_SESSION['registration_data'] = [
     'username' => $username,
     'password' => $password,
     'fname' => $fname,
     'lname' => $lname,
     'email' => $email,
-    'departments' => $departments,
     'course' => $course
 ];
 $_SESSION['registration_otp'] = $otp;
@@ -177,678 +159,555 @@ $timeLeft = 600;
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Register - Create Account</title>
-<link href="<?= BASE_URL ?>/assets/css/login.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-/* Additional CSS for OTP functionality */
-.otp-section {
-margin: 20px 0;
-padding: 20px;
-background: #f8f9fa;
-border-radius: 8px;
-border-left: 4px solid #007bff;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARMMC LMS · Register</title>
+    <link href="<?= BASE_URL ?>/assets/css/register.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-.otp-input-container {
-position: relative;
-margin: 20px 0;
-}
-
-.otp-input {
-letter-spacing: 10px;
-font-size: 28px;
-text-align: center;
-padding: 15px;
-width: 100%;
-box-sizing: border-box;
-border: 2px solid #ddd;
-border-radius: 8px;
-transition: all 0.3s;
-}
-
-.otp-input:focus {
-border-color: #007bff;
-box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-outline: none;
-}
-
-.timer-display {
-text-align: center;
-font-size: 14px;
-color: #666;
-margin: 10px 0;
-}
-
-.timer-expired {
-color: #dc3545;
-font-weight: bold;
-}
-
-.resend-code-btn {
-background: #6c757d;
-color: white;
-border: none;
-padding: 8px 15px;
-border-radius: 4px;
-cursor: pointer;
-font-size: 14px;
-transition: background 0.3s;
-margin-left: 10px;
-}
-
-.resend-code-btn:hover {
-background: #5a6268;
-}
-
-.resend-code-btn:disabled {
-background: #ccc;
-cursor: not-allowed;
-}
-
-.form-actions {
-display: flex;
-gap: 10px;
-margin-top: 20px;
-}
-
-.btn-verify {
-flex: 1;
-background: #28a745;
-}
-
-.btn-verify:hover {
-background: #218838;
-}
-
-.btn-cancel {
-flex: 1;
-background: #6c757d;
-}
-
-.btn-cancel:hover {
-background: #5a6268;
-}
-
-/* Department Checkbox Styles */
-.department-section {
-margin: 20px 0;
-padding: 15px;
-background: #f8f9fa;
-border-radius: 8px;
-border: 1px solid #e0e0e0;
-}
-
-.department-title {
-font-size: 14px;
-font-weight: 600;
-color: #555;
-margin-bottom: 15px;
-display: flex;
-align-items: center;
-}
-
-.department-title i {
-color: #667eea;
-margin-right: 8px;
-}
-
-.checkbox-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-gap: 12px;
-max-height: 300px;
-overflow-y: auto;
-padding: 5px;
-}
-
-.checkbox-item {
-display: flex;
-align-items: center;
-padding: 8px 12px;
-background: white;
-border: 1px solid #e0e0e0;
-border-radius: 8px;
-transition: all 0.2s;
-cursor: pointer;
-}
-
-.checkbox-item:hover {
-background: #e7f1ff;
-border-color: #667eea;
-transform: translateY(-2px);
-box-shadow: 0 4px 8px rgba(102, 126, 234, 0.1);
-}
-
-.checkbox-item input[type="checkbox"] {
-width: 18px;
-height: 18px;
-margin-right: 12px;
-cursor: pointer;
-accent-color: #667eea;
-}
-
-.checkbox-item label {
-cursor: pointer;
-font-size: 14px;
-color: #333;
-flex: 1;
-}
-
-.selected-count {
-display: inline-block;
-background: #667eea;
-color: white;
-padding: 4px 12px;
-border-radius: 50px;
-font-size: 12px;
-margin-left: 10px;
-}
-
-.select-all-btn {
-background: none;
-border: 1px dashed #667eea;
-color: #667eea;
-padding: 5px 15px;
-border-radius: 20px;
-font-size: 12px;
-cursor: pointer;
-transition: all 0.2s;
-margin-left: auto;
-}
-
-.select-all-btn:hover {
-background: #667eea;
-color: white;
-}
-
-.department-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 15px;
-}
-
-/* Alert styles */
-.alert {
-padding: 12px;
-border-radius: 4px;
-margin: 15px 0;
-}
-
-.alert-danger {
-background: #f8d7da;
-color: #721c24;
-border: 1px solid #f5c6cb;
-}
-
-.alert-success {
-background: #d4edda;
-color: #155724;
-border: 1px solid #c3e6cb;
-}
-
-.alert-info {
-background: #d1ecf1;
-color: #0c5460;
-border: 1px solid #bee5eb;
-}
-
-/* Selected departments summary */
-.selected-summary {
-margin-top: 10px;
-font-size: 13px;
-color: #666;
-background: white;
-padding: 8px 12px;
-border-radius: 6px;
-border: 1px solid #e0e0e0;
-}
-
-.selected-badge {
-display: inline-block;
-background: #e7f1ff;
-color: #667eea;
-padding: 4px 10px;
-border-radius: 50px;
-font-size: 12px;
-margin: 2px;
-}
-</style>
+        body {
+            background-image: url('../uploads/images/armmc-bg.png');
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 35, 102, 0.4);
+            z-index: -1;
+        }
+    </style>
 </head>
 <body>
-<div class="login-container">
-<div class="login-header">
-<h1>Create Account</h1>
-<p>Join us by creating your free account</p>
-</div>
-
-<?php if($err): ?>
-<div class="alert alert-danger">
-<i class="fas fa-exclamation-circle"></i>
-<?= htmlspecialchars($err) ?>
-</div>
-<?php endif; ?>
-
-<?php if($success && !$showOTP): ?>
-<div class="alert alert-success">
-<i class="fas fa-check-circle"></i>
-<?= $success ?>
-</div>
-<?php endif; ?>
-
-<form class="login-form" method="POST" id="registerForm">
-<?php if(!$showOTP): ?>
-<!-- Registration Form -->
-<div class="form-row">
-    <div class="form-group half">
-        <label for="fname">First Name</label>
-        <div class="input-with-icon">
-            <i class="fas fa-user"></i>
-            <input type="text" id="fname" name="fname" class="form-control" 
-                    placeholder="Enter your first name" 
-                    value="<?= isset($_POST['fname']) ? htmlspecialchars($_POST['fname']) : '' ?>" required>
-        </div>
-    </div>
-    
-    <div class="form-group half">
-        <label for="lname">Last Name</label>
-        <div class="input-with-icon">
-            <i class="fas fa-user"></i>
-            <input type="text" id="lname" name="lname" class="form-control" 
-                    placeholder="Enter your last name"
-                    value="<?= isset($_POST['lname']) ? htmlspecialchars($_POST['lname']) : '' ?>" required>
-        </div>
-    </div>
-</div>
-
-<div class="form-group">
-    <label for="email">Email Address</label>
-    <div class="input-with-icon">
-        <i class="fas fa-at"></i>
-        <input type="email" id="email" name="email" class="form-control" 
-                placeholder="Enter your email"
-                value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>" required>
-    </div>
-</div>
-
-<!-- Department Checkboxes -->
-<div class="department-section">
-    <div class="department-header">
-        <div class="department-title">
-            <i class="fas fa-building"></i>
-            Department i20 <span class="selected-count" id="selectedCount">0 selected</span>
-        </div>
-        <button type="button" class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()">
-            <i class="fas fa-check-double"></i> Select All
-        </button>
-    </div>
-    
-    <div class="checkbox-grid" id="departmentGrid">
-        <?php foreach($departments as $index => $dept): ?>
-            <div class="checkbox-item">
-                <input type="checkbox" 
-                        name="departments[]" 
-                        value="<?= htmlspecialchars($dept) ?>" 
-                        id="dept_<?= $index ?>"
-                        <?= (isset($_POST['departments']) && in_array($dept, $_POST['departments'])) ? 'checked' : '' ?>>
-                <label for="dept_<?= $index ?>"><?= htmlspecialchars($dept) ?></label>
+    <div class="overlay"></div>
+    <div class="register-card">
+        <div class="grid-layout">
+            <!-- LEFT SIDE: COMPANY LOGO (identical) -->
+            <div class="logo-hero">
+                <div class="logo-main">
+                    <img 
+                        class="company-logo-png" 
+                        src="../uploads/images/armmc-logo.png" 
+                        alt="ARMMC Logo"
+                        title="Amang Rodriguez Memorial Medical Center"
+                    >
+                    <div class="logo-caption">
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i> 
+                        AMANG RODRIGUEZ MEMORIAL MEDICAL CENTER 
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i>
+                    </div>
+                </div>
             </div>
-        <?php endforeach; ?>
-    </div>
-    
-    <!--  departments summary -->
-    <div class="selected-summary" id="selectedSummary">
-        <i class="fas fa-info-circle"></i>
-        No departments selected yet
-    </div>
-</div>
 
-<!-- Course/Program (Optional) -->
-<div class="form-group">
-    <label for="course">Course/Program (Optional)</label>
-    <div class="input-with-icon">
-        <i class="fas fa-graduation-cap"></i>
-        <input type="text" id="course" name="course" class="form-control" 
-                placeholder="Enter your course/program"
-                value="<?= isset($_POST['course']) ? htmlspecialchars($_POST['course']) : '' ?>">
-    </div>
-</div>
+            <!-- RIGHT SIDE: REGISTRATION FORM -->
+            <div class="register-container">
+                <h2 class="register-header">
+                    join our <span>LMS</span>
+                </h2>
+                <p class="register-subtitle">
+                    Fill in your details to get started
+                </p>
 
-<div class="form-group">
-    <label for="username">Username *</label>
-    <div class="input-with-icon">
-        <i class="fas fa-user"></i>
-        <input type="text" id="username" name="username" class="form-control" 
-                placeholder="Choose a username" required
-                value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>">
-    </div>
-</div>
+                <?php if($err): ?>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <?= htmlspecialchars($err) ?>
+                </div>
+                <?php endif; ?>
 
-<div class="form-group">
-    <label for="password">Password *</label>
-    <div class="input-with-icon">
-        <i class="fas fa-lock"></i>
-        <input type="password" id="password" name="password" class="form-control" 
-                placeholder="Enter password" required>
-        <span class="password-toggle" id="togglePassword">
-            <i class="fas fa-eye"></i>
-        </span>
-    </div>
-    <small class="password-hint">Minimum 8 characters recommended</small>
-</div>
+                <?php if($success && !$showOTP): ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <?= $success ?>
+                </div>
+                <?php endif; ?>
 
-<button type="submit" class="login-button">Send OTP</button>
+                <!-- Registration Form -->
+                <div class="register-form-wrapper">
+                    <form action="../public/register.php" method="POST" id="registerForm">
+                        <?php if(!$showOTP): ?>
+                        <!-- First Name & Last Name Row -->
+                        <div class="register-name-row">
+                            <div class="register-form-group">
+                                <label for="fname" class="register-form-label">First Name</label>
+                                <div class="register-input-container">
+                                    <i class="fas fa-user register-input-icon"></i>
+                                    <input 
+                                        type="text" 
+                                        id="fname" 
+                                        name="fname" 
+                                        class="register-form-input" 
+                                        placeholder="John"
+                                        value="<?= isset($_POST['fname']) ? htmlspecialchars($_POST['fname']) : '' ?>"
+                                        required
+                                    >
+                                </div>
+                            </div>
 
-<div class="signup-link">
-    Already have an account?
-    <a href="<?= BASE_URL ?>/public/login.php">Sign in now</a>
-</div>
+                            <div class="register-form-group">
+                                <label for="lname" class="register-form-label">Last Name</label>
+                                <div class="register-input-container">
+                                    <i class="fas fa-user register-input-icon"></i>
+                                    <input 
+                                        type="text" 
+                                        id="lname" 
+                                        name="lname" 
+                                        class="register-form-input" 
+                                        placeholder="Doe"
+                                        value="<?= isset($_POST['lname']) ? htmlspecialchars($_POST['lname']) : '' ?>"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                        </div>
 
-<?php else: ?>
-<!-- OTP Verification Section -->
-<div class="otp-section">
-    <?php if($success): ?>
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i>
-            <?= $success ?>
+                        <!-- Email Address -->    
+                        <div class="register-form-group">
+                            <label for="email" class="register-form-label">Email Address</label>
+                            <div class="register-input-container">
+                                <i class="fas fa-envelope register-input-icon"></i>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    name="email" 
+                                    class="register-form-input" 
+                                    placeholder="john.doe@armmc.gov.ph"
+                                    value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>"
+                                    required
+                                >
+                            </div>
+                        </div>
+                       
+                        <!-- Username -->
+                        <div class="register-form-group">
+                            <label for="username" class="register-form-label">Username</label>
+                            <div class="register-input-container">
+                                <i class="fas fa-at register-input-icon"></i>
+                                <input 
+                                    type="text" 
+                                    id="username" 
+                                    name="username" 
+                                    class="register-form-input" 
+                                    placeholder="johndoe123"
+                                    value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="register-name-row">    
+                            <div class="register-form-group">
+                                <label for="password" class="register-form-label">Password</label>
+                                <div class="register-input-container">
+                                    <i class="fas fa-lock register-input-icon"></i>
+                                    <input 
+                                        type="password" 
+                                        id="password" 
+                                        name="password" 
+                                        class="register-form-input" 
+                                        placeholder="Use strong password"
+                                        required
+                                        onkeyup="checkPasswordStrength()"
+                                    >
+                                    <button type="button" class="register-password-toggle" onclick="togglePasswordVisibility('password', 'togglePasswordIcon')">
+                                        <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                    </button>
+                                </div>
+                                <small class="password-hint">Minimum 8 characters recommended</small>
+                                <div class="register-password-strength">
+                                    <span>Strength:</span>
+                                    <div class="register-strength-bar">
+                                        <div class="register-strength-fill" id="strengthBar"></div>
+                                    </div>
+                                    <span id="strengthText">Weak</span>
+                                </div>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="register-form-group">
+                                <label for="confirm_password" class="register-form-label">Confirm Password</label>
+                                <div class="register-input-container">
+                                    <i class="fas fa-lock register-input-icon"></i>
+                                    <input 
+                                        type="password" 
+                                        id="confirm_password" 
+                                        name="confirm_password" 
+                                        class="register-form-input" 
+                                        placeholder="Re-enter password"
+                                        required
+                                        onkeyup="validatePasswordMatch()"
+                                    >
+                                    <button type="button" class="register-password-toggle" onclick="togglePasswordVisibility('confirm_password', 'toggleConfirmIcon')">
+                                        <i class="fas fa-eye" id="toggleConfirmIcon"></i>
+                                    </button>
+                                </div>
+                                <small id="passwordMatchMessage" style="color: #dc3545; font-size: 0.8rem; margin-left: 1rem;"></small>
+                            </div>
+                        </div>
+
+                        <!-- Register Button -->
+                        <button type="submit" class="register-btn-primary">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+
+                        <!-- Sign In Link -->
+                        <div class="register-signin-prompt">
+                            Already have an account? 
+                            <a href="../public/login.php" class="register-signin-link">Sign in now</a>
+                        </div>
+
+                        <?php else: ?>
+                        <!-- OTP Verification Section -->
+                        <div class="otp-section">
+                            <?php if($success): ?>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <?= $success ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <h3 style="text-align: center; margin-bottom: 20px;">
+                                <i class="fas fa-shield-alt"></i> Verify Your Email
+                            </h3>
+                            
+                            <p style="text-align: center; margin-bottom: 20px;">
+                                Enter the 6-digit OTP sent to:<br>
+                                <strong><?= htmlspecialchars($_SESSION['registration_data']['email'] ?? '') ?></strong>
+                            </p>
+                            
+                            <div class="otp-input-container">
+                                <input type="text" id="security_code" name="security_code" class="otp-input" 
+                                        placeholder="000000" maxlength="6" pattern="\d{6}" required 
+                                        autocomplete="off" inputmode="numeric">
+                                <input type="hidden" name="otp_verify" value="1">
+                            </div>
+                            
+                            <div class="timer-display" id="otpTimer">
+                                <?php
+                                if ($timeLeft <= 0) {
+                                    echo '<span class="timer-expired">OTP has expired</span>';
+                                } else {
+                                    $minutes = floor($timeLeft / 60);
+                                    $seconds = $timeLeft % 60;
+                                    echo "OTP expires in: <span id='timeLeft'>" . sprintf('%02d:%02d', $minutes, $seconds) . "</span>";
+                                }
+                                ?>
+                            </div>
+                            
+                            <div style="text-align: center; margin: 15px 0;">
+                                <button type="button" class="resend-code-btn" id="resendCodeBtn" 
+                                        onclick="resendOTP()" <?= $timeLeft > 0 ? 'disabled' : '' ?>>
+                                    <i class="fas fa-redo"></i> Resend OTP
+                                </button>
+                                <span id="resendTimer" style="font-size: 12px; color: #666; margin-left: 10px;"></span>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="register-btn-primary btn-verify">
+                                    <i class="fas fa-check"></i> Verify & Register
+                                </button>
+                                <button type="button" class="register-btn-primary btn-cancel" onclick="window.location.href='register.php'">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                            
+                            <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
+                                <i class="fas fa-info-circle"></i> Didn't receive the code? Check your spam folder.
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </form>
+                </div>
+
+                <!-- Bottom note -->
+                <div class="register-bottom-note">
+                    <span class="line"></span>
+                    <span>ARMMC Learning Management System. All rights reserved 2026.</span>
+                    <span class="line"></span>
+                </div>
+                <div class="register-bottom-note" style="margin-top: 0.5rem; margin-left: 250px;">
+                    iMISS
+                </div>
+            </div>
         </div>
-    <?php endif; ?>
-    
-    <h3 style="text-align: center; margin-bottom: 20px;">
-        <i class="fas fa-shield-alt"></i> Verify Your Email
-    </h3>
-    
-    <p style="text-align: center; margin-bottom: 20px;">
-        Enter the 6-digit OTP sent to:<br>
-        <strong><?= htmlspecialchars($_SESSION['registration_data']['email'] ?? '') ?></strong>
-    </p>
-    
-    <div class="otp-input-container">
-        <input type="text" id="security_code" name="security_code" class="otp-input" 
-                placeholder="000000" maxlength="6" pattern="\d{6}" required 
-                autocomplete="off" inputmode="numeric">
-        <input type="hidden" name="otp_verify" value="1">
     </div>
-    
-    <div class="timer-display" id="otpTimer">
-        <?php
-        if ($timeLeft <= 0) {
-            echo '<span class="timer-expired">OTP has expired</span>';
-        } else {
-            $minutes = floor($timeLeft / 60);
-            $seconds = $timeLeft % 60;
-            echo "OTP expires in: <span id='timeLeft'>" . sprintf('%02d:%02d', $minutes, $seconds) . "</span>";
+
+    <!-- JavaScript for interactive features -->
+    <script>
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const toggleIcon = document.getElementById(iconId);
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
         }
-        ?>
-    </div>
-    
-    <div style="text-align: center; margin: 15px 0;">
-        <button type="button" class="resend-code-btn" id="resendCodeBtn" 
-                onclick="resendOTP()" <?= $timeLeft > 0 ? 'disabled' : '' ?>>
-            <i class="fas fa-redo"></i> Resend OTP
-        </button>
-        <span id="resendTimer" style="font-size: 12px; color: #666; margin-left: 10px;"></span>
-    </div>
-    
-    <div class="form-actions">
-        <button type="submit" class="login-button btn-verify">
-            <i class="fas fa-check"></i> Verify & Register
-        </button>
-        <button type="button" class="login-button btn-cancel" onclick="window.location.href='register.php'">
-            <i class="fas fa-times"></i> Cancel
-        </button>
-    </div>
-    
-    <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #666;">
-        <i class="fas fa-info-circle"></i> Didn't receive the code? Check your spam folder.
-    </div>
-</div>
-<?php endif; ?>
-</form>
-</div>
 
-<script>
-// Password toggle functionality
-const togglePassword = document.getElementById('togglePassword');
-if (togglePassword) {
-togglePassword.addEventListener('click', function() {
-const passwordInput = document.getElementById('password');
-const icon = this.querySelector('i');
+        // Password toggle for main password field
+        const togglePassword = document.getElementById('togglePassword');
+        if (togglePassword) {
+            togglePassword.addEventListener('click', function() {
+                const passwordInput = document.getElementById('password');
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        }
 
-if (passwordInput.type === 'password') {
-    passwordInput.type = 'text';
-    icon.classList.remove('fa-eye');
-    icon.classList.add('fa-eye-slash');
-} else {
-    passwordInput.type = 'password';
-    icon.classList.remove('fa-eye-slash');
-    icon.classList.add('fa-eye');
-}
-});
-}
 
-// Department checkbox functionality
-function updateSelectedCount() {
-const checkboxes = document.querySelectorAll('input[name="departments[]"]:checked');
-const count = checkboxes.length;
-const countElement = document.getElementById('selectedCount');
-const summaryElement = document.getElementById('selectedSummary');
 
-countElement.textContent = count + ' selected';
+        // Initialize count on page load
+        updateSelectedCount();
 
-if (count > 0) {
-const selected = Array.from(checkboxes).map(cb => cb.nextElementSibling.textContent);
-let summary = '<i class="fas fa-check-circle text-success"></i> Selected: ';
-summary += selected.map(name => `<span class="selected-badge">${name}</span>`).join(' ');
-summaryElement.innerHTML = summary;
-} else {
-summaryElement.innerHTML = '<i class="fas fa-info-circle"></i> No departments selected yet';
-}
+        // Check password strength
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            let strength = 0;
+            
+            if (password.length >= 8) strength += 25;
+            if (password.match(/[a-z]+/)) strength += 25;
+            if (password.match(/[A-Z]+/)) strength += 25;
+            if (password.match(/[0-9]+/)) strength += 25;
+            if (password.match(/[$@#&!]+/)) strength += 25;
+            
+            // Cap at 100%
+            strength = Math.min(strength, 100);
+            
+            strengthBar.style.width = strength + '%';
+            
+            if (strength < 30) {
+                strengthText.textContent = 'Weak';
+                strengthBar.style.background = '#dc3545';
+            } else if (strength < 55) {
+                strengthText.textContent = 'Medium';
+                strengthBar.style.background = '#ffc107';
+            } else if (strength < 80) {
+                strengthText.textContent = 'Strong';
+                strengthBar.style.background = '#230cf5';            
+            } else {
+                strengthText.textContent = 'Complex';
+                strengthBar.style.background = '#28a745';
+            }
+        }
 
-// Update Select All button text
-const selectAllBtn = document.getElementById('selectAllBtn');
-if (count === <?= count($departments) ?>) {
-selectAllBtn.innerHTML = '<i class="fas fa-times"></i> Deselect All';
-} else {
-selectAllBtn.innerHTML = '<i class="fas fa-check-double"></i> Select All';
-}
-}
+        // Validate password match
+        function validatePasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const message = document.getElementById('passwordMatchMessage');
+            
+            if (confirmPassword.length > 0) {
+                if (password === confirmPassword) {
+                    message.textContent = '✓ Passwords match';
+                    message.style.color = '#28a745';
+                } else {
+                    message.textContent = '✗ Passwords do not match';
+                    message.style.color = '#dc3545';
+                }
+            } else {
+                message.textContent = '';
+            }
+        }
 
-function toggleSelectAll() {
-const checkboxes = document.querySelectorAll('input[name="departments[]"]');
-const checkedCount = document.querySelectorAll('input[name="departments[]"]:checked').length;
+        // OTP Timer and Auto-submit
+        const otpTimeLeft = <?= $timeLeft ?>;
+        let timeLeft = otpTimeLeft;
+        let canResend = timeLeft <= 0;
+        let resendCooldown = 60;
 
-if (checkedCount === checkboxes.length) {
-// Deselect all
-checkboxes.forEach(cb => cb.checked = false);
-} else {
-// Select all
-checkboxes.forEach(cb => cb.checked = true);
-}
+        function updateOTPTimer() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
 
-updateSelectedCount();
-}
+                const timeLeftElement = document.getElementById('timeLeft');
+                if (timeLeftElement) {
+                    timeLeftElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
 
-// Add event listeners to checkboxes
-document.querySelectorAll('input[name="departments[]"]').forEach(checkbox => {
-checkbox.addEventListener('change', updateSelectedCount);
-});
+                if (timeLeft <= 0) {
+                    canResend = true;
+                    document.getElementById('resendCodeBtn').disabled = false;
+                    document.getElementById('otpTimer').innerHTML = '<span class="timer-expired">OTP has expired</span>';
+                }
+            }
+        }
 
-// Initialize count on page load
-updateSelectedCount();
+        function updateResendTimer() {
+            const resendBtn = document.getElementById('resendCodeBtn');
+            const resendTimerElement = document.getElementById('resendTimer');
 
-// OTP Timer and Auto-submit
-const otpTimeLeft = <?= $timeLeft ?>;
-let timeLeft = otpTimeLeft;
-let canResend = timeLeft <= 0;
-let resendCooldown = 60;
+            if (!canResend && resendCooldown > 0) {
+                resendCooldown--;
+                resendBtn.disabled = true;
+                if (resendTimerElement) {
+                    resendTimerElement.textContent = `Resend in ${resendCooldown}s`;
+                }
 
-function updateOTPTimer() {
-if (timeLeft > 0) {
-timeLeft--;
-const minutes = Math.floor(timeLeft / 60);
-const seconds = timeLeft % 60;
+                if (resendCooldown <= 0) {
+                    canResend = true;
+                    resendBtn.disabled = false;
+                    if (resendTimerElement) {
+                        resendTimerElement.textContent = '';
+                    }
+                }
+            }
+        }
 
-const timeLeftElement = document.getElementById('timeLeft');
-if (timeLeftElement) {
-    timeLeftElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
+        <?php if ($showOTP): ?>
+        setInterval(updateOTPTimer, 1000);
+        setInterval(updateResendTimer, 1000);
+        <?php endif; ?>
 
-if (timeLeft <= 0) {
-    canResend = true;
-    document.getElementById('resendCodeBtn').disabled = false;
-    document.getElementById('otpTimer').innerHTML = '<span class="timer-expired">OTP has expired</span>';
-}
-}
-}
+        // Auto-submit OTP when 6 digits entered
+        const securityCodeInput = document.getElementById('security_code');
+        if (securityCodeInput) {
+            securityCodeInput.focus();
 
-function updateResendTimer() {
-const resendBtn = document.getElementById('resendCodeBtn');
-const resendTimerElement = document.getElementById('resendTimer');
+            securityCodeInput.addEventListener('input', function() {
+                this.value = this.value.replace(/\D/g, '');
+                if (this.value.length > 6) {
+                    this.value = this.value.slice(0, 6);
+                }
+                if (this.value.length === 6) {
+                    setTimeout(() => {
+                        document.getElementById('registerForm').submit();
+                    }, 300);
+                }
+            });
 
-if (!canResend && resendCooldown > 0) {
-resendCooldown--;
-resendBtn.disabled = true;
-if (resendTimerElement) {
-    resendTimerElement.textContent = `Resend in ${resendCooldown}s`;
-}
+            securityCodeInput.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                const numbers = pastedText.replace(/\D/g, '');
+                this.value = numbers.slice(0, 6);
+                if (this.value.length === 6) {
+                    setTimeout(() => {
+                        document.getElementById('registerForm').submit();
+                    }, 300);
+                }
+            });
+        }
 
-if (resendCooldown <= 0) {
-    canResend = true;
-    resendBtn.disabled = false;
-    if (resendTimerElement) {
-        resendTimerElement.textContent = '';
-    }
-}
-}
-}
+        function resendOTP() {
+            if (!canResend) return;
+            if (confirm('Resend OTP to your email?')) {
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.style.display = 'none';
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'resend_otp';
+                input.value = '1';
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
 
-<?php if ($showOTP): ?>
-setInterval(updateOTPTimer, 1000);
-setInterval(updateResendTimer, 1000);
-<?php endif; ?>
+        // Form validation
+        const form = document.getElementById('registerForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                <?php if (!$showOTP): ?>
+                const username = document.getElementById('username')?.value.trim();
+                const password = document.getElementById('password')?.value;
+                const email = document.getElementById('email')?.value.trim();
 
-// Auto-submit OTP when 6 digits entered
-const securityCodeInput = document.getElementById('security_code');
-if (securityCodeInput) {
-securityCodeInput.focus();
+                if (!username) {
+                    e.preventDefault();
+                    showError('Username is required');
+                    return false;
+                }
+                if (!password) {
+                    e.preventDefault();
+                    showError('Password is required');
+                    return false;
+                }
+                if (password.length < 8) {
+                    if (!confirm('Your password is less than 8 characters. Continue anyway?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+                if (!email) {
+                    e.preventDefault();
+                    showError('Email is required');
+                    return false;
+                }
 
-securityCodeInput.addEventListener('input', function() {
-this.value = this.value.replace(/\D/g, '');
-if (this.value.length > 6) {
-    this.value = this.value.slice(0, 6);
-}
-if (this.value.length === 6) {
-    setTimeout(() => {
-        document.getElementById('registerForm').submit();
-    }, 300);
-}
-});
+                <?php else: ?>
+                const otp = document.getElementById('security_code')?.value.trim();
+                if (!otp || otp.length !== 6) {
+                    e.preventDefault();
+                    showError('Please enter a valid 6-digit OTP');
+                    return false;
+                }
+                <?php endif; ?>
+            });
+        }
 
-securityCodeInput.addEventListener('paste', function(e) {
-e.preventDefault();
-const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-const numbers = pastedText.replace(/\D/g, '');
-this.value = numbers.slice(0, 6);
-if (this.value.length === 6) {
-    setTimeout(() => {
-        document.getElementById('registerForm').submit();
-    }, 300);
-}
-});
-}
+        function showError(message) {
+            let errorDiv = document.querySelector('.alert-danger');
+            if (!errorDiv) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>${message}</span>`;
+                form.insertBefore(errorDiv, form.firstChild);
+            } else {
+                errorDiv.querySelector('span').textContent = message;
+            }
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
-function resendOTP() {
-if (!canResend) return;
-if (confirm('Resend OTP to your email?')) {
-const form = document.createElement('form');
-form.method = 'post';
-form.style.display = 'none';
-const input = document.createElement('input');
-input.type = 'hidden';
-input.name = 'resend_otp';
-input.value = '1';
-form.appendChild(input);
-document.body.appendChild(form);
-form.submit();
-}
-}
-
-// Form validation
-const form = document.getElementById('registerForm');
-if (form) {
-form.addEventListener('submit', function(e) {
-<?php if (!$showOTP): ?>
-const username = document.getElementById('username')?.value.trim();
-const password = document.getElementById('password')?.value;
-const email = document.getElementById('email')?.value.trim();
-const departments = document.querySelectorAll('input[name="departments[]"]:checked');
-
-if (!username) {
-    e.preventDefault();
-    showError('Username is required');
-    return false;
-}
-if (!password) {
-    e.preventDefault();
-    showError('Password is required');
-    return false;
-}
-if (password.length < 8) {
-    if (!confirm('Your password is less than 8 characters. Continue anyway?')) {
-        e.preventDefault();
-        return false;
-    }
-}
-if (!email) {
-    e.preventDefault();
-    showError('Email is required');
-    return false;
-}
-if (departments.length === 0) {
-    e.preventDefault();
-    showError('Please select at least one department/college');
-    return false;
-}
-<?php else: ?>
-const otp = document.getElementById('security_code')?.value.trim();
-if (!otp || otp.length !== 6) {
-    e.preventDefault();
-    showError('Please enter a valid 6-digit OTP');
-    return false;
-}
-<?php endif; ?>
-});
-}
-
-function showError(message) {
-let errorDiv = document.querySelector('.alert-danger');
-if (!errorDiv) {
-errorDiv = document.createElement('div');
-errorDiv.className = 'alert alert-danger';
-errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>${message}</span>`;
-form.insertBefore(errorDiv, form.firstChild);
-} else {
-errorDiv.querySelector('span').textContent = message;
-}
-errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-// Input animations
-const inputs = document.querySelectorAll('.form-control, .otp-input, .checkbox-item');
-inputs.forEach(input => {
-input.addEventListener('focus', function() {
-if (this.classList.contains('checkbox-item')) return;
-this.parentElement.style.transform = 'scale(1.02)';
-});
-input.addEventListener('blur', function() {
-if (this.classList.contains('checkbox-item')) return;
-this.parentElement.style.transform = 'scale(1)';
-});
-});
-</script>
+        // Input animations
+        const inputs = document.querySelectorAll('.register-form-input, .otp-input, .checkbox-item');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                if (this.classList.contains('checkbox-item')) return;
+                this.parentElement.style.transform = 'scale(1.02)';
+            });
+            input.addEventListener('blur', function() {
+                if (this.classList.contains('checkbox-item')) return;
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+    </script>
 </body>
 </html>

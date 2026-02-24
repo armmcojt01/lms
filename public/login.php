@@ -59,232 +59,165 @@ $admin_email = $admin['email'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>ARMMC LMS · Login</title>
     <link href="<?= BASE_URL ?>/assets/css/login.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* login notification if staff number does not meet the netcode_DB */
-        .pending-note {
-            background: #fff9e6;
-            border-left: 3px solid #ed6c02;
-            border-radius: 4px;
-            padding: 14px 16px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            font-size: 14px;
-            color: #5f5b4c;
-        }
-        
-        .pending-note i {
-            color: #ed6c02;
-            font-size: 16px;
-            margin-top: 2px;
-        }
-        
-        .pending-note-content {
-            flex: 1;
-        }
-        
-        .pending-note-title {
-            font-weight: 600;
-            color: #5f4b1c;
-            margin-bottom: 4px;
-        }
-        
-        .pending-note-text {
-            color: #6b6b6b;
-            line-height: 1.5;
-        }
-        
-        .pending-note-actions {
-            margin-top: 10px;
-            display: flex;
-            gap: 16px;
-        }
-        
-        .pending-note-actions a {
-            color: #ed6c02;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .pending-note-actions a:hover {
-            text-decoration: underline;
-        }
-        
-        .pending-note-actions i {
-            font-size: 12px;
-        }
-        
-     
-        .error-message {
-            background: #ffebee;
-            border-left: 3px solid #d32f2f;
-            border-radius: 4px;
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
-            color: #5f4c4c;
-        }
-        
-        .error-message i {
-            color: #d32f2f;
-        }
-        
-   
-        .success-message {
-            background: #e8f5e9;
-            border-left: 3px solid #2e7d32;
-            border-radius: 4px;
-            padding: 12px 16px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
-            color: #1e4620;
-        }
-        
-        .success-message i {
-            color: #2e7d32;
-        }
-
-
-
-        body {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<style>
+ * {
             margin: 0;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
-            position: relative;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-    
-    /* Background image container */
+
         body {
-            background-image: url('<?= BASE_URL ?>/uploads/images/photo%201.jpg');
+            background-image: url('../uploads/images/armmc-bg.png');
             background-size: cover;
             background-position: center;
-            background-attachment: fixed;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Montserrat;
-            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
         }
-
-
-    /* Blue overlay */
+        
         .overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 35, 102, 0.4); /* Dark royal */
-            backdrop-filter: blur(5px);
+            background-color: rgba(0, 35, 102, 0.4);
             z-index: -1;
         }
-    
-        .content {
-            position: relative;
-            padding: 50px;
-            color: white;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-            z-index: 1;
-        }
 
-    </style>
-</head>
+</style>
 <body>
     <div class="overlay"></div>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>Welcome Back</h1>
-            <p>Sign in to your account</p>
+    <div class="login-card">
+        <div class="grid-layout">
+            <!-- LEFT SIDE: COMPANY LOGO (identical to welcome page) -->
+            <div class="logo-hero">
+                <div class="logo-main">
+                    <img 
+                        class="company-logo-png" 
+                        src="../uploads/images/armmc-logo.png" 
+                        alt="ARMMC Logo"
+                        title="Amang Rodriguez Memorial Medical Center"
+                    >
+                    <div class="logo-caption">
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i> 
+                        AMANG RODRIGUEZ MEMORIAL MEDICAL CENTER 
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDE: LOGIN FORM -->
+            <div class="login-container">  
+                <h1 class="login-header">
+                    access your <span>account</span>
+                </h1>
+                <p class="login-subtitle">
+                    Please enter your credentials to continue
+                </p>
+
+                <!-- Pending Notification -->
+                <?php if (!empty($pending_contact)): ?>
+                <div class="pending-note">
+                    <i class="fas fa-clock"></i>
+                    <div class="pending-note-content">
+                        <div class="pending-note-title">Account pending approval</div>
+                        <div class="pending-note-text"><?= htmlspecialchars($pending_contact) ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Error Message -->
+                <?php if(!empty($error)): ?>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span><?= htmlspecialchars($error) ?></span>
+                </div>
+                <?php endif; ?>
+
+                <!-- Login Form -->
+                <div class="login-form-wrapper">
+                    <form class="login-form" method="POST" action="" id="loginForm">
+                        <!-- Username/Email field -->
+                        <div class="login-form-group">
+                            <label for="username" class="login-form-label">Username or Email</label>
+                            <div class="login-input-container">
+                                <i class="fas fa-user login-input-icon"></i>
+                                <input 
+                                    type="text" 
+                                    id="username" 
+                                    name="username" 
+                                    class="login-form-input" 
+                                    placeholder="Enter your username"
+                                    value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Password field -->
+                        <div class="login-form-group">
+                            <label for="password" class="login-form-label">Password</label>
+                            <div class="login-input-container">
+                                <i class="fas fa-lock login-input-icon"></i>
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    name="password" 
+                                    class="login-form-input" 
+                                    placeholder="Enter your password"
+                                    required
+                                >
+                                <button type="button" class="login-password-toggle" id="togglePassword">
+                                    <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember me & Forgot password -->
+                        <div class="login-options-row">
+                            <label class="login-remember">
+                                <input type="checkbox" name="remember" id="remember"> Remember me
+                            </label>
+                            <a href="forgot_password.php" class="login-forgot-link">Forgot password?</a>
+                        </div>
+
+                        <!-- Login button -->
+                        <button type="submit" class="login-btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+
+                        <!-- Sign up link -->
+                        <div class="login-signup-prompt">
+                            Don't have an account? 
+                            <a href="<?= BASE_URL ?>/public/register.php" class="login-signup-link">Sign up now</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bottom note -->
+                <div class="login-bottom-note">
+                    <span class="line"></span>
+                    <span>ARMMC Learning Management System. All rights reserved 2026.</span>
+                    <span class="line"></span>
+                </div>
+                <div class="login-bottom-note" style="margin-top: 0.5rem; margin-left: 250px;">
+                    iMISS
+                </div>
+            </div>
         </div>
-        
-        <!-- nofig -->
-<?php if (!empty($pending_contact)): ?>
-<div class="pending-note">
-<i class="fas fa-clock"></i>
-<div class="pending-note-content">
-<div class="pending-note-title"><p>Account pending approval.</p>
-                                <p>Please wait for Admin approval.</p>
-</div>
-<div class="pending-note-text">
-
-
-             <!-- wag galawin pls        -->
-<!-- <?php if (!empty($admin_email)): ?>
-<a href="mailto:<?= htmlspecialchars($admin_email) ?>?subject=Account%20Activation%20Request&body=Hello%20Admin%2C%0D%0A%0D%0AMy%20account%20is%20still%20pending.%20Please%20activate%20it.%0D%0AUsername%3A%20<?= urlencode($_POST['username'] ?? '') ?>%0D%0A%0D%0AThank%20you.">
-<i class="fas fa-envelope"></i> Email Admin</a>
-<a href="login.php">
-<i class="fas fa-arrow-left"></i> Back
-</a> -->
-</div>
-<?php endif; ?>
-</div>
-</div>
-<?php endif; ?>
-        
-        <!-- Error Message -->
-<?php if(!empty($error)): ?>
-<div class="error-message">
-<i class="fas fa-exclamation-circle"></i>
-<span><?= htmlspecialchars($error) ?></span>
-</div>
-        <?php endif; ?>
-        
-        <form class="login-form" method="POST" action="">
-            <div class="form-group">
-                <label for="username">Username or Email</label>
-                <div class="input-with-icon">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="username" name="username" class="form-control" 
-                           placeholder="Enter your username" required 
-                           value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <div class="input-with-icon">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" name="password" class="form-control" 
-                           placeholder="Enter your password" required>
-                    <span class="password-toggle" id="togglePassword">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-            </div>
-            
-            <div class="form-options">
-                <div class="remember-me">
-                    <input type="checkbox" id="remember" name="remember">
-                    <label for="remember">Remember me</label>
-                </div>
-                <a href="forgot_password.php" class="forgot-password">Forgot password?</a>
-            </div>
-            
-            <button type="submit" class="login-button">
-                <i class="fas fa-sign-in-alt"></i> Sign In
-            </button>
-            
-            <div class="signup-link">
-                Don't have an account?
-                <a href="<?= BASE_URL ?>/public/register.php">Sign up now</a>
-            </div>
-        </form>
     </div>
-        </div>
 
+    <!-- JavaScript for interactive features -->
     <script>
-        // Password toggle
+        // Password toggle functionality
         document.getElementById('togglePassword').addEventListener('click', function() {
             const passwordInput = document.getElementById('password');
             const icon = this.querySelector('i');
@@ -301,7 +234,7 @@ $admin_email = $admin['email'];
         });
         
         // Input animation
-        const inputs = document.querySelectorAll('.form-control');
+        const inputs = document.querySelectorAll('.login-form-input');
         inputs.forEach(input => {
             input.addEventListener('focus', function() {
                 this.parentElement.style.transform = 'scale(1.01)';
@@ -320,6 +253,17 @@ $admin_email = $admin['email'];
             usernameInput.addEventListener('input', () => errorMessage.style.display = 'none');
             passwordInput.addEventListener('input', () => errorMessage.style.display = 'none');
         }
+
+        // Form validation
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                e.preventDefault();
+                alert('Please fill in all fields');
+            }
+        });
     </script>
 </body>
 </html>

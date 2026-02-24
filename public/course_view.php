@@ -236,7 +236,7 @@ animation: slideIn 0.3s ease;
 @keyframes slideIn {
 from {
 transform: translateX(100%);
-opacity: 0;
+opacity: 0; 
 }
 to {
 transform: translateX(0);

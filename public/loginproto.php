@@ -1,4 +1,14 @@
- * {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARMMC LMS · Login</title>
+    <!-- Font Awesome 6 (free) for subtle icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* === GLOBAL STYLES (identical to welcome page) === */
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -39,14 +49,14 @@
                 0 8px 20px -8px rgba(0,32,64,0.1),
                 inset 0 1px 1px rgba(255,255,255,0.6);
             border: 1px solid rgba(255,255,255,0.6);
-            padding: 3rem 2.5rem;
+            padding: 3rem 2.5rem; /* EXACT same padding */
         }
 
         /* two-column layout - EXACT same grid */
         .grid-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2.5rem;
+            gap: 2.5rem; /* EXACT same gap */
             align-items: center;
         }
 
@@ -56,7 +66,7 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             border-radius: 2.5rem;
-            padding: 3rem 2rem;
+            padding: 3rem 2rem; /* EXACT same padding */
             box-shadow: 0 20px 30px -10px rgba(0,20,40,0.15);
             border: 1px solid rgba(255,255,255,0.8);
             transition: transform 0.3s ease;
@@ -105,14 +115,29 @@
 
         /* === LOGIN-SPECIFIC STYLES - sized to match welcome content exactly === */
         .login-container {
-            padding: 1rem 0.5rem;
+            padding: 1rem 0.5rem; /* EXACT same padding as welcome-content */
             height: 100%;
             display: flex;
             flex-direction: column;
         }
 
+        .login-badge {
+            display: inline-block;
+            background: #1d4e75;
+            color: white;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            letter-spacing: 0.3px;
+            margin-bottom: 1.8rem; /* Adjusted to match visual weight */
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 4px 10px rgba(0,60,110,0.2);
+            align-self: flex-start;
+        }
+
         .login-header {
-            font-size: clamp(2.2rem, 5vw, 3.4rem);
+            font-size: clamp(2.2rem, 5vw, 3.4rem); /* EXACT same as welcome-title */
             font-weight: 700;
             line-height: 1.2;
             color: #0c2e45;
@@ -124,13 +149,13 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            border-bottom: 4px solid #6ab0f5;
+            border-bottom: 4px solid #6ab0f5; /* Same as welcome page accent */
             display: inline-block;
             padding-bottom: 2px;
         }
 
         .login-subtitle {
-            font-size: 1.1rem;
+            font-size: 1.1rem; /* Slightly smaller than description for hierarchy */
             color: #2b4e6b;
             margin-bottom: 1.8rem;
             line-height: 1.5;
@@ -141,7 +166,7 @@
         /* login form - sized to fit perfectly in the space */
         .login-form-wrapper {
             width: 100%;
-            max-width: 420px;
+            max-width: 420px; /* Optimal form width */
             margin: 0.5rem 0 1rem;
         }
 
@@ -253,7 +278,7 @@
         .login-btn-primary {
             background: #1f6fb0;
             border: none;
-            padding: 0.9rem 2rem;
+            padding: 0.9rem 2rem; /* EXACT same as welcome page button */
             border-radius: 50px;
             font-weight: 600;
             font-size: 1.1rem;
@@ -299,75 +324,71 @@
             text-decoration: underline;
         }
 
-        /* Alert & Notification Styles */
-        .pending-note {
-            background: rgba(237, 108, 2, 0.1);
-            border: 1px solid rgba(237, 108, 2, 0.3);
-            border-radius: 50px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
+        .login-divider {
             display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            color: #ed6c02;
+            align-items: center;
+            gap: 0.8rem;
+            color: #7fa3c2;
+            font-size: 0.8rem;
+            margin: 1rem 0;
         }
 
-        .pending-note i {
-            color: #ed6c02;
-            font-size: 1.2rem;
-            margin-top: 0.2rem;
-        }
-
-        .pending-note-content {
+        .login-divider-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #9bbcdd, transparent);
             flex: 1;
         }
 
-        .pending-note-title {
-            font-weight: 600;
-            color: #ed6c02;
-            margin-bottom: 0.25rem;
+        .login-social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin: 1rem 0 0.8rem;
         }
 
-        .pending-note-text {
-            color: #856404;
+        .login-social-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(31, 111, 176, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1f6fb0;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .login-social-icon:hover {
+            background: white;
+            border-color: #1f6fb0;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 12px -8px #1f6fb0;
+        }
+
+        .login-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #567e9f;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 0.8rem;
+            transition: color 0.2s;
+            align-self: flex-start;
+        }
+
+        .login-back-link i {
             font-size: 0.9rem;
         }
 
-        .error-message {
-            background: rgba(220, 53, 69, 0.1);
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            border-radius: 50px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            color: #dc3545;
+        .login-back-link:hover {
+            color: #1f6fb0;
         }
 
-        .error-message i {
-            color: #dc3545;
-            font-size: 1.2rem;
-        }
-
-        .success-message {
-            background: rgba(40, 167, 69, 0.1);
-            border: 1px solid rgba(40, 167, 69, 0.3);
-            border-radius: 50px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            color: #28a745;
-        }
-
-        .success-message i {
-            color: #28a745;
-            font-size: 1.2rem;
-        }
-
-        /* bottom note */
+        /* bottom note - EXACT same as welcome page */
         .login-bottom-note {
             margin-top: 1.8rem;
             font-size: 0.9rem;
@@ -390,7 +411,7 @@
             font-size: 0.9rem;
         }
 
-        /* responsiveness */
+        /* responsiveness - matches welcome page exactly */
         @media (max-width: 880px) {
             .grid-layout {
                 grid-template-columns: 1fr;
@@ -406,11 +427,17 @@
                 flex-direction: column;
                 align-items: center;
             }
+            .login-badge {
+                align-self: center;
+            }
             .login-form-wrapper {
                 margin: 0 auto;
             }
             .login-options-row {
                 justify-content: space-around;
+            }
+            .login-back-link {
+                align-self: center;
             }
             .login-subtitle {
                 margin-left: auto;
@@ -420,9 +447,144 @@
 
         @media (max-width: 500px) {
             .login-card {
-                padding: 1.8rem 1.2rem;
+                padding: 1.8rem 1.2rem; /* EXACT same as welcome page mobile */
             }
             .logo-caption {
                 font-size: 0.9rem;
             }
         }
+    </style>
+</head>
+<body>
+    <div class="overlay"></div>
+    <div class="login-card">
+        <div class="grid-layout">
+            <!-- LEFT SIDE: COMPANY LOGO (identical to welcome page) -->
+            <div class="logo-hero">
+                <div class="logo-main">
+                    <img 
+                        class="company-logo-png" 
+                        src="../uploads/images/armmc-logo.png" 
+                        alt="ARMMC Logo"
+                        title="Amang Rodriguez Memorial Medical Center"
+                    >
+                    <div class="logo-caption">
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i> 
+                        AMANG RODRIGUEZ MEMORIAL MEDICAL CENTER 
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SIDE: LOGIN FORM - sized exactly like welcome content -->
+            <div class="login-container">  
+                <h1 class="login-header">
+                    <p>access your 
+                    <p><span>account</span>
+                </h1>
+                <p class="login-subtitle">
+                    Please enter your credentials to continue
+                </p>
+
+                <!-- Login Form -->
+                <div class="login-form-wrapper">
+                    <form action="../public/authenticate.php" method="POST" id="loginForm">
+                        <!-- Username/Email field -->
+                        <div class="login-form-group">
+                            <label for="username" class="login-form-label">Username or Email</label>
+                            <div class="login-input-container">
+                                <i class="fas fa-user login-input-icon"></i>
+                                <input 
+                                    type="text" 
+                                    id="username" 
+                                    name="username" 
+                                    class="login-form-input" 
+                                    placeholder="Enter your username"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Password field -->
+                        <div class="login-form-group">
+                            <label for="password" class="login-form-label">Password</label>
+                            <div class="login-input-container">
+                                <i class="fas fa-lock login-input-icon"></i>
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    name="password" 
+                                    class="login-form-input" 
+                                    placeholder="Enter your password"
+                                    required
+                                >
+                                <button type="button" class="login-password-toggle" onclick="togglePasswordVisibility()">
+                                    <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember me & Forgot password -->
+                        <div class="login-options-row">
+                            <label class="login-remember">
+                                <input type="checkbox" name="remember"> Remember me
+                            </label>
+                            <a href="../public/forgot-password.php" class="login-forgot-link">Forgot password?</a>
+                        </div>
+
+                        <!-- Login button (same size as Get Started button) -->
+                        <button type="submit" class="login-btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login to LMS
+                        </button>
+
+                        <!-- Sign up link -->
+                        <div class="login-signup-prompt">
+                            Don't have an account? 
+                            <a href="../public/protoregister.php" class="login-signup-link">Sign up here</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bottom note (EXACT match to welcome page) -->
+                <div class="login-bottom-note">
+                    <span class="line"></span>
+                    <span>ARMMC Learning Management System. All rights reserved 2026.</span>
+                    <span class="line"></span>
+                </div>
+                <div class="login-bottom-note" style="margin-top: 0.5rem; margin-left: 250px;">
+                    iMISS
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for password visibility toggle -->
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Form validation
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                e.preventDefault();
+                alert('Please fill in all fields');
+            }
+        });
+    </script>
+</body>
+</html>
