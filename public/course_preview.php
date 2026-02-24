@@ -1,4 +1,145 @@
+@ -1,343 +1,342 @@
+<?php
+require_once __DIR__ . '/../inc/config.php';
+require_once __DIR__ . '/../inc/auth.php';
+require_login();
 
+$user = $_SESSION['user'];
+$userId = $user['id'] ?? 0;
+$courseId = intval($_GET['id'] ?? 0);
+if(!$courseId) die('Invalid course ID');
+
+// Fetch course with enrollment info for current user
+$stmt = $pdo->prepare('
+    SELECT 
+        c.*, 
+        u.fname, 
+        u.lname,
+        CASE 
+            WHEN c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN "expired"
+            ELSE COALESCE(e.status, "notenrolled")
+        END AS enroll_status,
+        e.progress,
+        e.total_time_seconds,
+        e.enrolled_at
+    FROM courses c 
+    LEFT JOIN users u ON c.proponent_id = u.id 
+    LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
+    WHERE c.id = ?
+');
+$stmt->execute([$userId, $courseId]);
+$course = $stmt->fetch();
+if(!$course) die('Course not found');
+
+// Debug output to check the values (remove after testing)
+/*
+echo "Course expires_at: " . $course['expires_at'] . "<br>";
+echo "Current time: " . date('Y-m-d H:i:s') . "<br>";
+echo "Enroll status: " . $course['enroll_status'] . "<br>";
+*/
+
+// Fetch all courses with enrollment info (for other queries you might need)
+$stmt = $pdo->prepare("
+    SELECT 
+        c.id, 
+        c.title, 
+        c.description, 
+        c.summary,
+        c.thumbnail,
+        c.created_at, 
+        c.expires_at AS course_expires_at,
+        CASE 
+            WHEN c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
+            ELSE COALESCE(e.status, 'notenrolled')
+        END AS enroll_status,
+        e.progress, 
+        e.total_time_seconds,
+        e.enrolled_at,
+        c.proponent_id
+    FROM courses c
+    LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
+    WHERE c.is_active = 1
+    ORDER BY c.id DESC
+");
+$stmt->execute([$userId]);
+$courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch user's enrolled courses
+$stmt = $pdo->prepare("
+    SELECT c.id, c.title, c.description, c.thumbnail, c.created_at, c.expires_at,
+           e.progress, e.total_time_seconds, 
+           CASE 
+               WHEN c.expires_at IS NOT NULL AND c.expires_at < NOW() THEN 'expired'
+               ELSE e.status 
+           END AS enroll_status
+    FROM courses c
+    JOIN enrollments e ON e.course_id = c.id
+    WHERE e.user_id = ?
+    ORDER BY c.id DESC
+");
+
+// $stmt->execute([$userId]);
+// $myCourses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Handle enrollment POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enroll'])) {
+    // Check if course is expired
+    if ($isExpired) {
+        $_SESSION['error'] = "Cannot enroll: This course has expired.";
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+    
+    // Check if already enrolled
+    if ($enrollStatus === 'ongoing') {
+        $_SESSION['error'] = "You are already enrolled in this course.";
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+    
+    // CHECK FOR ACTIVE ENROLLMENT
+    if ($hasActiveEnrollment) {
+        $_SESSION['error'] = "You can only be enrolled in one course at a time. Please complete or drop your current course: <strong>" . htmlspecialchars($activeCourseTitle) . "</strong>";
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+    
+    // Proceed with enrollment
+    try {
+        $pdo->beginTransaction();
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO enrollments (user_id, course_id, status, enrolled_at, progress, total_time_seconds) 
+            VALUES (?, ?, 'ongoing', NOW(), 0, 0)
+        ");
+        $stmt->execute([$userId, $courseId]);
+        
+        $pdo->commit();
+        $_SESSION['success'] = "Successfully enrolled in the course!";
+        header("Location: " . BASE_URL . "/public/course_view.php?id=$courseId");
+        exit;
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        $_SESSION['error'] = "Enrollment failed: " . $e->getMessage();
+        header("Location: course.php?id=$courseId");
+        exit;
+    }
+}
+?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title><?=htmlspecialchars($course['title'])?> - LMS</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/sidebar.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/course.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+        .btn-expired {
             background-color: #6c757d !important;
             border-color: #6c757d !important;
             color: white !important;

@@ -1,4 +1,3 @@
-
 /* Grid container */
 .row-cols-md-4 {
     display: grid !important;
@@ -353,10 +352,14 @@
 }
 
 .modern-card-title {
-    display: flex;
+    display: flex;  /* Changed from 'fixed' to 'flex' */
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 12px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    gap: 12px;  /* Add space between title and any other content */
 }
 
 .modern-card-title h6 {
@@ -366,6 +369,11 @@
     margin: 0;
     flex: 1;
     line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;  /* Optional: adds hyphens when breaking words */
+    min-width: 0;  /* Critical: allows flex item to shrink below content size */
+    max-width: 100%;
 }
 
 /* Modern Badges */
@@ -410,6 +418,11 @@
     line-height: 1.6;
     margin-bottom: 20px;
     flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    width: 100%;
 }
 
 /* Course Info */

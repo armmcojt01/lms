@@ -1,7 +1,5 @@
 <?php
-
 require_once __DIR__ . '/../inc/config.php';
-
 
 $stmt = $pdo->prepare("
     SELECT c.id, c.title, c.description, c.thumbnail, c.file_pdf, c.file_video,
@@ -29,7 +27,7 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to SkillUp - Learning Management System</title>
+    <title>Welcome to ARMMC - Learning Management System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Sen:wght@400..800&display=swap" rel="stylesheet">
@@ -150,7 +148,7 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
             <div class="footer-links" style="margin-top: 1px;">
                 <a href="#">Privacy Policy</a>
                 <a href="#">Terms of Service</a>
-                <a href="#">Contact Us</a>
+                <a href="<?= BASE_URL ?>/public/contact_form.php">Contact Us</a>
             </div>
         </footer>
     </div>
