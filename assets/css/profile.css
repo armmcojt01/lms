@@ -1,4 +1,4 @@
-        /* Profile Page Wrapper */
+  /* Profile Page Wrapper */
         .profile-wrapper {
             margin-left: 260px;
             min-height: 100vh;
@@ -69,6 +69,10 @@
 }
 
 /* AVATAR ROLE COLORS */
+.profile-avatar.superadmin {
+    background: linear-gradient(135deg, #929290, #c1c1c2); /* gray */
+}
+
 .profile-avatar.admin {
     background: linear-gradient(135deg, #2563eb, #3b82f6); /* Blue */
 }
@@ -128,6 +132,10 @@
     margin-bottom: 15px;
 }
 
+/* SUPERADMIN - Gray */
+    .user-role.superadmin{
+    background: linear-gradient(135deg, #909292, #c1c1c2);
+}
 /* ADMIN - Blue */
     .user-role.admin {
     background: linear-gradient(135deg, #2563eb, #3b82f6);

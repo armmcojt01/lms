@@ -118,8 +118,6 @@ function get_role_icon($role = '') {
                             <i class="fa fa-newspaper"></i> News
                         </a>
                     </li>
-                    
-                </a>
                 <?php endif; ?>
 
 <!-- super admin -->
