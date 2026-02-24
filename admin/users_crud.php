@@ -611,7 +611,7 @@ $deptNames = !empty($u['department_names']) ? explode('||', $u['department_names
 <td><?= htmlspecialchars($u['email']) ?></td>
 <td>
 <?php if ($u['role'] === 'admin'): ?>
-<span class="badge bg-danger">Admin</span>
+<span class="badge bg-primary">Admin</span>
 <?php elseif ($u['role'] === 'proponent'): ?>
 <span class="badge bg-info">Proponent</span>
 <?php elseif ($u['role'] === 'superadmin'): ?>

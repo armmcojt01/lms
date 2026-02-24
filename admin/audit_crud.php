@@ -57,6 +57,7 @@ $course_actions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+    
 .action-badge {
 padding: 4px 10px;
 border-radius: 20px;
@@ -65,34 +66,38 @@ font-weight: 600;
 display: inline-block;
 }
 .action-added {
-background: #28a745;
+background: #28a73b;
+color: white;
+}
+.action-deleted {
+background: #e00000;
 color: white;
 }
 .action-edited {
 background: #ffc107;
 color: black;
 }
-.user-avatar {
-width: 35px;
-height: 35px;
-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-color: white;
-border-radius: 50%;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 14px;
-font-weight: 600;
+
+table {
+  table-layout: fixed; /* Helps with width/height control */
 }
+
 .table th {
-background: #343a40;
-color: white;
-font-size: 13px;
-white-space: nowrap;
+  background: #343a40;
+  color: white;
+  font-size: 16px;
+  white-space: nowrap;
+  height: 50px;           /* fixed height */
+  max-height: 60px;       /* optional max */
+  overflow: hidden;       /* hide excess content */
 }
+
 .table td {
-font-size: 13px;
-vertical-align: middle;
+  font-size: 13px;
+  vertical-align: middle;
+  height: 40px;
+  max-height: 80px;
+  overflow-y: auto;       /* show scrollbar if needed */
 }
 .stats-card {
 background: white;
@@ -107,6 +112,32 @@ font-size: 32px;
 font-weight: bold;
 color: #007bff;
 }
+
+/* Add this to your existing CSS */
+.card {
+    max-height: 600px; /* Adjust this value as needed */
+    display: flex;
+    flex-direction: column;
+}
+
+.card-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* Important for flexbox overflow */
+}
+
+.table-responsive {
+    max-height: 500px; /* Adjust this value as needed */
+    overflow-y: auto;
+}
+
+/* Keep the table header fixed */
+.table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #b8b9bb; /* Match your existing header color */
+}
 </style>
 </head>
 <body>
@@ -118,45 +149,17 @@ color: #007bff;
 <!-- Main Content -->
 <div class="main-content-wrapper">
 <div class="container-fluid py-4">
-<h3 class="mb-4">Course Activity Dashboard</h3>
+<h3 class="mb-4">Audit Trail</h3>
 
 <!-- Statistics Cards -->
-<div class="row mb-4">
-<div class="col-md-3">
-<div class="stats-card">
-<div class="stats-number"><?= count($course_actions) ?></div>
-<div class="text-muted">Total Courses</div>
-</div>
-</div>
-<div class="col-md-3">
-<div class="stats-card">
-<div class="stats-number" style="color: #28a745;">
-<?= count(array_filter($course_actions, function($a) { return $a['action'] == 'ADDED'; })) ?>
-</div>
-<div class="text-muted">Added</div>
-</div>
-</div>
-<div class="col-md-3">
-<div class="stats-card">
-<div class="stats-number" style="color: #ffc107;">
-<?= count(array_filter($course_actions, function($a) { return $a['action'] == 'EDITED'; })) ?>
-</div>
-<div class="text-muted">Edited</div>
-</div>
-</div>
-<div class="col-md-3">
-<div class="stats-card">
-<div class="stats-number"><?= count($users) ?></div>
-<div class="text-muted">Active Creators</div>
-</div>
-</div>
+<div class="row mb-4"> 
 </div>
 
 <!-- Course Activity Table -->
 <div class="card">
-<div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+<div class="card-header text-black d-flex justify-content-between align-items-center">
 <h5 class="mb-0">Course Creation & Edit History</h5>
-<span class="badge bg-light text-dark"><?= count($course_actions) ?> records</span>
+<span class="badge bg-success"><?= count($course_actions) ?> records</span>
 </div>
 <div class="card-body p-0">
 <div class="table-responsive">
@@ -206,20 +209,17 @@ color: #007bff;
 <td>
 <?php if ($course['action'] == 'ADDED'): ?>
 <span class="action-badge action-added">
-<i class="fas fa-plus-circle me-1"></i>ADDED
+<i class="fas fa-plus-circle me-1"></i>Added
 </span>
 <?php else: ?>
 <span class="action-badge action-edited">
-<i class="fas fa-edit me-1"></i>EDITED
+<i class="fas fa-edit me-1"></i>Edited
 </span>
 <?php endif; ?>
 </td>
 <td>
 <?php if ($course['username']): ?>
 <div class="d-flex align-items-center">
-<div class="user-avatar me-2">
-<?= strtoupper(substr($course['fname'] ?? $course['username'], 0, 1)) ?>
-</div>
 <div>
 <strong><?= htmlspecialchars($course['username']) ?></strong>
 <br>
@@ -232,13 +232,16 @@ color: #007bff;
 </td>
 <td>
 <?php if ($course['role'] == 'admin'): ?>
-<span class="badge bg-danger">Admin</span>
+<span class="badge bg-primary">Admin</span>
 <?php elseif ($course['role'] == 'proponent'): ?>
 <span class="badge bg-info">Proponent</span>
 <?php elseif ($course['role'] == 'superadmin'): ?>
-<span class="badge bg-dark">Super Admin</span>
+<span class="badge bg-secondary">Super Admin</span>
 <?php else: ?>
-<span class="badge bg-secondary">Unknown</span>
+   <?php foreach ($users as $user): ?>
+    <
+<?= htmlspecialchars($user['role'] ?? '') ?>
+<?php endforeach; ?>
 <?php endif; ?>
 </td>
 </tr>
@@ -251,30 +254,7 @@ color: #007bff;
 </div>
 
 <!-- Creators List (Optional) -->
-<div class="card mt-4">
-<div class="card-header bg-secondary text-white">
-<h5 class="mb-0">Course Creators (<?= count($users) ?>)</h5>
-</div>
-<div class="card-body">
-<div class="row">
-<?php foreach ($users as $user): ?>
-<div class="col-md-3 mb-3">
-<div class="d-flex align-items-center p-2 border rounded">
-<div class="user-avatar me-2">
-<?= strtoupper(substr($user['fname'] ?? $user['username'], 0, 1)) ?>
-</div>
-<div>
-<strong><?= htmlspecialchars($user['username']) ?></strong>
-<br>
-<small class="text-muted"><?= htmlspecialchars($user['fname'] ?? '') ?></small>
-<br>
-<span class="badge <?= $user['role'] == 'admin' ? 'bg-danger' : ($user['role'] == 'proponent' ? 'bg-info' : 'bg-dark') ?>">
-<?= ucfirst($user['role']) ?>
-</span>
-</div>
-</div>
-</div>
-<?php endforeach; ?>
+
 </div>
 </div>
 </div>

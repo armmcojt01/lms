@@ -123,7 +123,7 @@ function get_role_icon($role = '') {
 <!-- super admin -->
                    <?php if($u && (is_superadmin())): ?>
 </li><a class="nav-link" href="<?= BASE_URL ?>/admin/audit_crud.php">
-                            <i class="fa fa-users"></i> Audit Logs
+                           <i class="fa-solid fa-clock-rotate-left"></i> Audit Trail
                         </a>
                          <?php endif; ?>
 

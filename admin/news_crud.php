@@ -82,6 +82,7 @@ if ($act === 'editform' && isset($_GET['id'])) {
 <head>
   <meta charset="utf-8">
   <title>News</title>
+<link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
@@ -90,6 +91,7 @@ if ($act === 'editform' && isset($_GET['id'])) {
   <?php include __DIR__ . '/../inc/sidebar.php'; ?>
 </div>
 
+<div class="main-content-wrapper">
 <div class="container py-4">
   <h4>News</h4>
   <p>
@@ -159,7 +161,7 @@ if ($act === 'editform' && isset($_GET['id'])) {
 </div>
 
 <?php endif; ?>
-
+    </div>
 </div>
 </body>
 </html>

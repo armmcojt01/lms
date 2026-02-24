@@ -157,14 +157,22 @@ require_once __DIR__ . '/../inc/config.php';
                         </a>
                     </button>
                 </div>
+                
 
                 <!-- subtle bottom note / additional trust text -->
+             
                 <div class="bottom-note">
                     <span class="line"></span>
                     <span>ARMMC Learning Management System. All rights reserved 2026.</span><span class="line"></span>
                 </div>
                 <div class="bottom-note" style="margin-top: 0.5rem; margin-left: 250px;">
                     <span>iMISS</span>
+                </div>
+
+                <div class="bottom-note" style="margin-top: 0.5rem; margin-left: 128px;">
+                    <span><a href="#">Privacy Policy |</a>
+                    <span><a href="#"> Terms and Condition |</a>
+                    <span><a href="<?= BASE_URL ?>/public/contact_form.php"> Contact Us</a>
                 </div>
             </div>
         </div>
