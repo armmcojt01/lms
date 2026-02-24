@@ -1,61 +1,35 @@
 <?php
 require_once __DIR__ . '/../inc/config.php';
 
-$stmt = $pdo->prepare("
-    SELECT c.id, c.title, c.description, c.thumbnail, c.file_pdf, c.file_video,
-           e.status AS enroll_status, e.progress
-    FROM courses c
-    LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
-    WHERE c.is_active = 1
-    ORDER BY c.id DESC
-");
-
-$courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Calculate counters
-$counter = ['total_courses' => 0, 'not_enrolled' => 0];
-$stmt = $pdo->query("SELECT COUNT(*) AS total FROM courses WHERE is_active = 1");
-$counter['total_courses'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-
-$avail = ['total_users' => 0];
-$stmt = $pdo->query("SELECT COUNT(*) AS total FROM users");
-$avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-//added tweak for welcome page
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to ARMMC - Learning Management System</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Sen:wght@400..800&display=swap" rel="stylesheet">
+    <title>LMS · company logo welcome</title>
     <link href="<?= BASE_URL ?>/assets/css/index.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-
-<style>
-     body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: Arial, sans-serif;
-        position: relative;
-    }
-    
-    /* Background image container */
-    body {
-            background-image: url('<?= BASE_URL ?>/uploads/images/photo%201.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Montserrat;
-            line-height: 1.6;
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-
-    /* Blue overlay */
-    .overlay {
+        body {
+            background-image: url('../uploads/images/armmc-bg.png');
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        
+         .overlay {
         position: fixed;
         top: 0;
         left: 0;
@@ -65,7 +39,7 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         z-index: -1;
     }
     
-    .content {
+        .content {
         position: relative;
         padding: 50px;
         color: white;
@@ -73,104 +47,127 @@ $avail['total_users'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         z-index: 1;
     }
 
-</style>
+        /* main welcome card */
+        .welcome-card {
+            max-width: 1280px;
+            width: 100%;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 3.5rem;
+            box-shadow: 
+                0 30px 60px -20px rgba(0,40,80,0.25),
+                0 8px 20px -8px rgba(0,32,64,0.1),
+                inset 0 1px 1px rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.6);
+            padding: 3rem 2.5rem;
+        }
 
+        /* two-column layout */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+            align-items: center;
+        }
+
+        /* left side – company logo as MAIN SUBJECT (PNG placeholder) */
+        .logo-hero {
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 2.5rem;
+            padding: 3rem 2rem;
+            box-shadow: 0 20px 30px -10px rgba(0,20,40,0.15);
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: transform 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-hero:hover {
+            transform: scale(1.01);
+            background: rgba(255,255,255,0.65);
+        }
+
+        /* logo container: the main subject */
+        .logo-main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+    </style>
+</head>
 <body>
-        <div class="overlay"></div>
-        <div class="welcome-container">
-            <div class="auth-buttons">
-                <a href="<?= BASE_URL ?>/public/login.php" class="auth-btn login-btn">
-                    <i class="fas fa-sign-in-alt"></i>
-                        Log-In
-                </a>
-                <a href="<?= BASE_URL ?>/public/register.php" class="auth-btn register-btn">
-                    <i class="fas fa-user-plus"></i>
-                        Create Account
-                </a>
+    <div class="overlay"></div>
+    <div class="welcome-card">
+        <div class="grid-layout">
+            <!-- LEFT SIDE: COMPANY LOGO AS MAIN SUBJECT – now PNG placeholder -->
+            <div class="logo-hero">
+                <div class="logo-main">
+                    <img 
+                        class="company-logo-png" 
+                        src="../uploads/images/armmc-logo.png" 
+                        alt="Company logo – main visual"
+                        title="Your company logo"
+                    >
+                    <!-- company name below logo – reinforces main subject -->
+                    <div class="logo-caption">
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i> 
+                        AMANG RODRIGUEZ MEMORIAL MEDICAL CENTER 
+                        <i class="fas fa-circle" style="font-size: 0.4rem; vertical-align: middle; color: #1f6fb0;"></i>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div>
-            
-        
 
-        <!-- Hero Section -->
-        <div class="welcome-hero">
-            <div image class="logo-container">
-                <img src="<?= BASE_URL ?>/uploads/images/SkillHub.png" alt="SkillHub Logo" class="logo">
-            </div>
-            <p>Transform your learning experience with our comprehensive Learning Management System. 
-               Access courses, track progress, and connect with educators in one seamless platform.</p>
-        </div>
-              
-        
-        <!-- Features Section -->
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-graduation-cap"></i>
+            <!-- RIGHT SIDE: Welcome message and LMS info -->
+            <div class="welcome-content">
+                <h1 class="welcome-title">
+                    welcome to <span>ARMMC LMS</span>
+                </h1>
+                <p class="welcome-description">
+                    Transform your learning experience with our comprehensive Learning Management System. 
+               Access courses, track progress, and connect with educators in one seamless platform.
+                </p>
+
+                <!-- micro features (relevant to LMS) -->
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <i class="fas fa-video"></i> <span>Interactive courses</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line"></i> <span>Progress tracking</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-users"></i> <span>Collaborative</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-certificate"></i> <span>Certification</span>
+                    </div>
                 </div>
-                <h3>Interactive Courses</h3>
-                <p>Engage with multimedia content, quizzes, and interactive assignments designed to enhance your learning experience.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-chart-line"></i>
+
+                <!-- call to actions -->
+                <div class="cta-group" style="margin-top: 0.5rem; margin-left: 190px;">
+                    <button class="btn-primary">
+                        <a href="../public/login.php" class="auth-btn login-btn" style="color: white; text-decoration: none;">
+                            <i class="fas fa-rocket"></i> Get Started
+                        </a>
+                    </button>
                 </div>
-                <h3>Progress Tracking</h3>
-                <p>Monitor your learning journey with detailed analytics and progress reports to stay on track with your goals.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-clock"></i>
+
+                <!-- subtle bottom note / additional trust text -->
+                <div class="bottom-note">
+                    <span class="line"></span>
+                    <span>ARMMC Learning Management System. All rights reserved 2026.</span><span class="line"></span>
                 </div>
-                <h3>Self-Paced Learning</h3>
-                <p>Courses are designed to be completed at your own pace, allowing you to learn whenever and wherever it's convenient for you.</p>
-            </div>
-        </div>
-        
-        <!-- Stats Section -->
-        <div class="welcome-stats">
-            <div class="stat-item">
-                <div class="stat-number"><?= $counter['total_courses'] ?></div>
-                <div class="stat-label">Total Courses</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number"><?= $avail['total_users'] ?></div>
-                <div class="stat-label">Active Learners</div>
+                <div class="bottom-note" style="margin-top: 0.5rem; margin-left: 250px;">
+                    <span>iMISS</span>
+                </div>
             </div>
         </div>
-        
-        <!-- Footer -->
-        <footer class="welcome-footer">
-            <p>&copy; <?= date('Y') ?> SkillHub Learning Management System. All rights reserved.</p>
-            <div class="footer-links" style="margin-top: 1px;">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Service</a>
-                <a href="<?= BASE_URL ?>/public/contact_form.php">Contact Us</a>
-            </div>
-        </footer>
     </div>
-
-    <script>
-        // Simple animations on scroll
-        document.addEventListener('DOMContentLoaded', function() {
-            const featureCards = document.querySelectorAll('.feature-card');
-            
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            }, { threshold: 0.1 });
-            
-            featureCards.forEach(card => {
-                observer.observe(card);
-            });
-        });
-    </script>
 </body>
 </html>

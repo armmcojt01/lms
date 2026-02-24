@@ -1,14 +1,52 @@
 <?php
-session_start();
+require_once __DIR__ . '/../inc/config.php';
+
+$success_message = '';
+$error_message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = $_POST['name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $subject = $_POST['subject'] ?? '';
+    $message = $_POST['message'] ?? '';
+    
+    // Validate inputs
+    $errors = [];
+    if (empty($name)) $errors[] = 'Name is required';
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Valid email is required';
+    if (empty($subject)) $errors[] = 'Subject is required';
+    if (empty($message)) $errors[] = 'Message is required';
+    
+    if (empty($errors)) {
+        try {
+            // Insert into database
+            $stmt = $pdo->prepare("
+                INSERT INTO contact_messages (name, email, subject, message, created_at, is_read) 
+                VALUES (?, ?, ?, ?, NOW(), 0)
+            ");
+            $stmt->execute([$name, $email, $subject, $message]);
+            
+            // Set success message
+            $success_message = 'Your message has been sent successfully! We will get back to you soon.';
+            
+        } catch (PDOException $e) {
+            $error_message = 'Failed to send message. Please try again later.';
+        }
+    } else {
+        $error_message = implode('<br>', $errors);
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us</title>
+    <title>Contact Us - ARMMC Learning Management System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Your exact CSS - unchanged */
         * {
             margin: 0;
             padding: 0;
@@ -307,81 +345,90 @@ session_start();
         }
     </style>
 </head>
-
 <body>
     <div class="contact-container">
         <div class="contact-header">
-            <h2><i class="fas fa-envelope"></i>Contact Us</h2>
-            <p>We'd love to hear from you! Send us a message and we'll respond as soon as possible.</p>
+            <h2><i class="fas fa-envelope"></i> Contact Us</h2>
+            <p>We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
         </div>
-
-        <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
-            <div class="alert alert-success">
+        
+        <!-- Success Message -->
+        <?php if (!empty($success_message)): ?>
+            <div class="alert alert-success" id="successAlert">
                 <i class="fas fa-check-circle"></i>
-                <span>Thank you! Your message has been sent successfully. We'll get back to you soon.</span>
+                <?= htmlspecialchars($success_message) ?>
             </div>
         <?php endif; ?>
 
-        <?php if (isset($_GET['status']) && $_GET['status'] == 'error'): ?>
-            <div class="alert alert-error">
+        <!-- Error Message -->
+        <?php if (!empty($error_message)): ?>
+            <div class="alert alert-error" id="errorAlert">
                 <i class="fas fa-exclamation-circle"></i>
-                <span>Sorry, there was an error sending your message. Please try again.</span>
+                <?= $error_message ?>
             </div>
         <?php endif; ?>
 
-        <form action="../inc/process_contact.php" method="POST" id="contactForm">
+        <form method="POST" action="" id="contactForm">
             <div class="form-group">
-                <label for="name"><i class="fas fa-user"></i>Your Name:</label>
-                <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                <label for="name"><i class="fas fa-user"></i>Your Name</label>
+                <input type="text" id="name" name="name" placeholder="Enter your full name" required
+                       value="<?= isset($_POST['name']) ? htmlspecialchars($_POST['name']) : '' ?>">
             </div>
 
             <div class="form-group">
-                <label for="email"><i class="fas fa-envelope"></i>Your Email:</label>
-                <input type="email" id="email" name="email" placeholder="Enter your email address" required>
+                <label for="email"><i class="fas fa-envelope"></i>Email Address</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email address" required
+                       value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>">
             </div>
 
             <div class="form-group">
-                <label for="subject"><i class="fas fa-tag"></i>Subject:</label>
-                <input type="text" id="subject" name="subject" placeholder="What is this about?" required>
+                <label for="subject"><i class="fas fa-tag"></i>Subject</label>
+                <input type="text" id="subject" name="subject" placeholder="What is this about?" required
+                       value="<?= isset($_POST['subject']) ? htmlspecialchars($_POST['subject']) : '' ?>">
             </div>
 
             <div class="form-group">
-                <label for="message"><i class="fas fa-comment"></i>Message:</label>
-                <textarea id="message" name="message" placeholder="Type your message here..." required></textarea>
+                <label for="message"><i class="fas fa-comment"></i>Message</label>
+                <textarea id="message" name="message" placeholder="Type your message here..." required><?= isset($_POST['message']) ? htmlspecialchars($_POST['message']) : '' ?></textarea>
             </div>
 
             <button type="submit" class="btn-submit" id="submitBtn">
-                <i class="fas fa-paper-plane"></i>Send Message
+                <i class="fas fa-paper-plane"></i>
+                Send Message
             </button>
         </form>
 
         <div class="back-link">
-            <a href="index.php"><i class="fas fa-arrow-left"></i>Back to Home</a>
+            <a href="<?= BASE_URL ?>/public/index.php"><i class="fas fa-arrow-left"></i> Back to Home</a>
         </div>
     </div>
 
     <script>
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
-            const btn = document.getElementById('submitBtn');
-            btn.innerHTML = '<i class="fas fa-spinner"></i>Sending...';
-            btn.disabled = true;
-        });
+        // Auto-hide success message after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const successAlert = document.getElementById('successAlert');
+            if (successAlert) {
+                setTimeout(function() {
+                    successAlert.style.transition = 'opacity 0.5s';
+                    successAlert.style.opacity = '0';
+                    setTimeout(function() {
+                        if (successAlert && successAlert.parentElement) {
+                            successAlert.remove();
+                        }
+                    }, 500);
+                }, 5000);
+            }
 
-        // Optional: Add real-time validation styling
-        const inputs = document.querySelectorAll('.form-group input, .form-group textarea');
-        inputs.forEach(input => {
-            input.addEventListener('invalid', function(e) {
-                e.preventDefault();
-                this.style.borderColor = '#e74c3c';
-            });
+            // Prevent double submission
+            const form = document.getElementById('contactForm');
+            const submitBtn = document.getElementById('submitBtn');
             
-            input.addEventListener('input', function() {
-                if (this.validity.valid) {
-                    this.style.borderColor = '#2ecc71';
-                } else {
-                    this.style.borderColor = '#e1e8f0';
-                }
-            });
+            if (form) {
+                form.addEventListener('submit', function() {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner"></i> Sending...';
+                });
+            }
         });
     </script>
 </body>

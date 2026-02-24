@@ -46,6 +46,7 @@ foreach ($courses as $c) {
 // Function to get role display name
 function get_role_display_name($role) {
     $roles = [
+        'superadmin' => 'SuperAdmin',
         'admin' => 'Administrator',
         'proponent' => 'Proponent',
         'user' => 'Student',

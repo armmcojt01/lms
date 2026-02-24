@@ -13,10 +13,7 @@
         .fixed-table {table-layout: fixed; width: 100%; overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
         .fixed-table th ,
 /* Custom tooltip for department badges */
-.fixed-table td:nth-child(4) {
-    position: relative;
-    cursor: help;
-}
+.fixed-table td:nth-child(4) {position: relative; cursor: help;}
 
 .fixed-table td:nth-child(4):hover::before {
     content: attr(data-departments);
@@ -47,8 +44,8 @@
         .fixed-table td:nth-child(1) { width: 30%; } /* Title column - adjust as needed */
         .fixed-table th:nth-child(1) { width: 5%; } /* ID */
         .fixed-table th:nth-child(2) { width: 10%; } /* Username */
-        .fixed-table th:nth-child(3) { width: 20%; } /* Full name */
-        .fixed-table th:nth-child(4) { width: 20%; } /* Departments */
+        .fixed-table th:nth-child(3) { width: 15%; } /* Full name */
+        .fixed-table th:nth-child(4) { width: 25%; } /* Departments */
         .fixed-table th:nth-child(5) { width: 15%; } /* Email */
         .fixed-table th:nth-child(6) { width: 10%; } /* Role */
         .fixed-table th:nth-child(7) { width: 10%; } /* joined */
@@ -56,3 +53,25 @@
         .fixed-table th:nth-child(9) { width: 20%; } /* Actions */
 
 
+.fixed-table-pending {
+    table-layout: fixed;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fixed-table-pending th:nth-child(1),
+.fixed-table-pending td:nth-child(1) { width: 5%; } /* ID */
+
+.fixed-table-pending td:nth-child(2) { width: 10%; } /* Username */
+
+.fixed-table-pending td:nth-child(3) { width: 15%; } /* Full Name */
+
+.fixed-table-pending td:nth-child(4) { width: 20%; } /* Email */
+
+.fixed-table-pending td:nth-child(5) { width: 10%; } /* Registered */
+
+.fixed-table-pending td:nth-child(6) { width: 8%; } /* Status */
+
+.fixed-table-pending td:nth-child(7) { width: 32%; } /* Actions */

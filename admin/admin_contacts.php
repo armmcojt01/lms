@@ -79,7 +79,6 @@ if ($filter === 'unread') {
     <link href="<?= BASE_URL ?>/assets/css/sidebar.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-
     <style>
         * {
             margin: 0;
@@ -505,6 +504,153 @@ if ($filter === 'unread') {
             text-decoration: underline;
         }
 
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            margin: 50px auto;
+            padding: 0;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s;
+            position: relative;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-light);
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            word-break: break-word;
+            padding-right: 30px;
+        }
+
+        .close-modal {
+            color: var(--text-secondary);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            line-height: 1;
+            z-index: 10;
+        }
+
+        .close-modal:hover {
+            color: var(--danger-color);
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .modal-sender-info {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .modal-date {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .modal-message {
+            background: #f8f9fa;
+            padding: 50px;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .modal-message p {
+            margin: 15px 0 0;
+            line-height: 1.9;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid var(--border-light);
+            border-radius: 0 0 8px 8px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .action-btn {
+            width: auto;
+            padding: 8px 16px;
+            border-radius: 4px;
+            opacity: 1;
+            height: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-footer .action-btn.reply {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .modal-footer .action-btn.reply:hover {
+            background: #1557b0;
+        }
+
+        .modal-footer .action-btn.close {
+            background: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .modal-footer .action-btn.close:hover {
+            background: #d5d5d5;
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .message-preview {
@@ -524,6 +670,11 @@ if ($filter === 'unread') {
 
             .message-date {
                 width: 100px;
+            }
+            
+            .modal-content {
+                margin: 20px auto;
+                width: 95%;
             }
         }
 
@@ -561,6 +712,15 @@ if ($filter === 'unread') {
                 opacity: 1;
                 margin-left: auto;
             }
+            
+            .modal-footer {
+                flex-direction: column;
+            }
+            
+            .modal-footer .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -572,25 +732,17 @@ if ($filter === 'unread') {
     <div class="main-content-wrapper">
         <!-- Page Header -->
         <div class="page-header">
-            <h1>
-                <i class="fas fa-envelope"></i>
+            <h3>
                 Contact Messages
-            </h1>
+            </h3>
             <div class="header-stats">
                 <div class="stat-item">
-                    <i class="fas fa-envelope"></i>
-                    Total: <?= $total_count ?>
                 </div>
                 <div class="stat-item">
-                    <i class="fas fa-envelope-open-text" style="color: var(--primary-color);"></i>
-                    Unread: <?= $unread_count ?>
-                    <?php if ($unread_count > 0): ?>
-                        <span class="stat-badge">New</span>
+                    <?php if ($unread_count > 0): ?>  
                     <?php endif; ?>
                 </div>
-                <div class="stat-item">
-                    <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
-                    Read: <?= $read_count ?>
+                <div class="stat-item">  
                 </div>
             </div>
         </div>
@@ -703,7 +855,53 @@ if ($filter === 'unread') {
         <?php endif; ?>
     </div>
 
+    <!-- Message Detail Modal -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeMessageModal()">&times;</span>
+            <div class="modal-header">
+                <h3 id="modalSubject"></h3>
+            </div>
+            <div class="modal-body">
+                <div class="modal-sender-info">
+                    <strong>From:</strong> <span id="modalName"></span> (<span id="modalEmail"></span>)
+                </div>
+                <div class="modal-date">
+                    <strong>Date:</strong> <span id="modalDate"></span>
+                </div>
+                <div class="modal-message">
+                    <strong>Message:</strong>
+                    <p id="modalMessage"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="modalReplyBtn" class="action-btn reply" target="_blank">
+                    <i class="fas fa-reply"></i> Reply
+                </a>
+                <button class="action-btn close" onclick="closeMessageModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Prepare message data from PHP
+        const messageData = <?php 
+            $messagesData = [];
+            foreach ($messages as $msg) {
+                $messagesData[$msg['id']] = [
+                    'id' => $msg['id'],
+                    'name' => htmlspecialchars($msg['name']),
+                    'email' => htmlspecialchars($msg['email']),
+                    'subject' => htmlspecialchars($msg['subject']),
+                    'message' => htmlspecialchars($msg['message']),
+                    'date' => date('F j, Y g:i A', strtotime($msg['created_at']))
+                ];
+            }
+            echo json_encode($messagesData);
+        ?>;
+
         // Search functionality
         document.getElementById('searchInput').addEventListener('keyup', function() {
             const searchTerm = this.value.toLowerCase();
@@ -797,7 +995,42 @@ if ($filter === 'unread') {
             form.submit();
         }
 
-        // Click on message row to view details (you can expand this)
+        // Modal functions
+        function showMessageDetails(messageId) {
+            const msg = messageData[messageId];
+            if (!msg) return;
+            
+            document.getElementById('modalSubject').textContent = msg.subject;
+            document.getElementById('modalName').textContent = msg.name;
+            document.getElementById('modalEmail').textContent = msg.email;
+            document.getElementById('modalDate').textContent = msg.date;
+            document.getElementById('modalMessage').textContent = msg.message;
+            
+            // Update reply button
+            const replyBtn = document.getElementById('modalReplyBtn');
+            replyBtn.href = `mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`;
+            
+            // Show modal
+            document.getElementById('messageModal').style.display = 'block';
+            
+            // Prevent body scrolling when modal is open
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMessageModal() {
+            document.getElementById('messageModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('messageModal');
+            if (event.target == modal) {
+                closeMessageModal();
+            }
+        }
+
+        // Click on message row to view details
         document.querySelectorAll('.message-row').forEach(row => {
             row.addEventListener('click', function(e) {
                 // Don't trigger if clicking on checkbox or actions
@@ -805,9 +1038,16 @@ if ($filter === 'unread') {
                     return;
                 }
                 
-                // Here you could open a modal or navigate to a detail page
-                console.log('View message:', this.dataset.id);
+                const messageId = this.dataset.id;
+                showMessageDetails(messageId);
             });
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeMessageModal();
+            }
         });
     </script>
 </body>

@@ -501,14 +501,13 @@ Pending Confirmation (<?= count($pendingUsers) ?>)
 </div>
 <div class="card-body p-0">
 <div class="table-responsive">
-<table class="table table-hover mb-0 fixed-table">
+<table class="table table-hover mb-0 fixed-table-pending">
 <thead class="table-light">
 <tr>
 <th>ID</th>
 <th>Username</th>
 <th>Full Name</th>
 <th>Email</th>
-<th>Role</th>
 <th>Registered</th>
 <th>Status</th>
 <th>Actions</th>
@@ -528,7 +527,6 @@ Pending Confirmation (<?= count($pendingUsers) ?>)
 <td><?= htmlspecialchars($u['username']) ?></td>
 <td><?= htmlspecialchars($u['fname'] . ' ' . $u['lname']) ?></td>
 <td><?= htmlspecialchars($u['email']) ?></td>
-<td><span class="badge bg-secondary"><?= ucfirst($u['role']) ?></span></td>
 <td><?= date('M d, Y H:i', strtotime($u['created_at'])) ?></td>
 <td>
 <span class="badge-pending">
@@ -596,16 +594,19 @@ $deptNames = !empty($u['department_names']) ? explode('||', $u['department_names
 <td><span class="fw-bold">#<?= $u['id'] ?></span></td>
 <td><?= htmlspecialchars($u['username']) ?></td>
 <td><?= htmlspecialchars($u['fname'] . ' ' . $u['lname']) ?></td>
-<td>
-<?php if (!empty($deptNames)): ?>
-<?php foreach($deptNames as $dept): ?>
-<span class="badge" style="background-color: #667eea; color: white; margin: 2px; padding: 5px 8px;">
-<?= htmlspecialchars($dept) ?>
-</span>
-<?php endforeach; ?>
-<?php else: ?>
-<span class="text-muted">No Department</span>
-<?php endif; ?>
+<td data-departments="<?= htmlspecialchars(implode(', ', $deptNames)) ?>">
+    <?php if (!empty($deptNames)): ?>
+        <?php foreach(array_slice($deptNames, 0, 1) as $dept): ?>
+            <span class="badge" style="background-color: #667eea; color: white; margin: 2px; padding: 5px 8px;">
+                <?= htmlspecialchars($dept) ?>
+            </span>
+        <?php endforeach; ?>
+        <?php if (count($deptNames) > 1): ?>
+            <span class="badge bg-secondary">+<?= count($deptNames) - 1 ?> more</span>
+        <?php endif; ?>
+    <?php else: ?>
+        <span class="text-muted">No Department</span>
+    <?php endif; ?>
 </td>
 <td><?= htmlspecialchars($u['email']) ?></td>
 <td>
@@ -613,8 +614,10 @@ $deptNames = !empty($u['department_names']) ? explode('||', $u['department_names
 <span class="badge bg-danger">Admin</span>
 <?php elseif ($u['role'] === 'proponent'): ?>
 <span class="badge bg-info">Proponent</span>
+<?php elseif ($u['role'] === 'superadmin'): ?>
+<span class="badge bg-secondary">SuperAdmin</span>
 <?php else: ?>
-<span class="badge bg-secondary">Student</span>
+<span class="badge bg-success">Student</span>
 <?php endif; ?>
 </td>
 <td><?= date('M d, Y', strtotime($u['created_at'])) ?></td>
