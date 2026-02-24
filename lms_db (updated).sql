@@ -375,7 +375,7 @@ INSERT INTO `users` (`id`, `username`, `password`, `fname`, `lname`, `email`, `r
 
 --
 -- Table structure for table `user_departments`
---
+--dump old user_departments from main db(install.sql)
 
 CREATE TABLE `user_departments` (
   `user_id` int(11) NOT NULL,
