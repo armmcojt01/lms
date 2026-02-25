@@ -92,8 +92,8 @@ function get_role_icon($role = '') {
             <?php endif; ?>
             <?php if($u && (is_proponent() || is_admin())): ?>
                <li class="nav-item">
-                <a class="nav-link" href="<?= BASE_URL ?>/admin/courses_crud.php">
-                    <i class="fa fa-plus"></i> Manage Courses
+                <a class="nav-link" href="<?= BASE_URL ?>/admin/manage_crud.php">
+                    <i class="fa fa-cog"></i> Manage Courses
                 </a>
               
         
