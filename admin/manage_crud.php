@@ -323,8 +323,13 @@ margin-bottom: 0.25rem;
 <div class="modern-courses-wrapper">
 <h3 class="mb-4">Courses Management</h3>
 
+<a href="?act=addform" class="btn btn-success mb-3">Add New Course</a>
+
+
 <?php if ($act === 'addform' || $act === 'edit'): ?>
 <?php $editing = ($act === 'edit'); ?>
+
+
 
 <div class="card p-4 mb-4 shadow-sm bg-white rounded">
 <form method="post" enctype="multipart/form-data">

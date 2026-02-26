@@ -423,28 +423,25 @@ class="modern-btn-primary modern-btn-sm">
 </a>
                                 
 <?php elseif ($enroll_status === 'notenrolled'): ?>
-<!--testing enrolmment button -->
-<?php if ($canEnroll || $isAdmin): ?>
-                         <!-- testing pero second part -->
- <a href="<?= BASE_URL ?>/public/enroll.php?course_id=<?= $c['id'] ?>"
-class="modern-btn-primary modern-btn-sm"
-onclick="return confirm('Enroll in this course?');">
-<i class="fas fa-sign-in-alt"></i> Enroll Now
-</a>
-<?php else: ?>
-                                    <!-- disab btn  -->
-<span class=""
-title="<?= htmlspecialchars($enrollDisabledReason) ?>"
- data-bs-toggle="tooltip"
-data-bs-placement="top">
-<i class="fas fa-lock"></i>
-</span>
-<span class="tooltip-icon" 
-title="<?= htmlspecialchars($enrollDisabledReason) ?>"
-data-bs-toggle="tooltip">
-<i class="fas fa-info-circle"></i>Disabled
-</span>
-<?php endif; ?>
+    <!-- testing enrolmment button -->
+    <?php if ($canEnroll || $isAdmin): ?>
+        <!-- Changed to form with POST method -->
+        <form action="<?= BASE_URL ?>/public/enroll.php" method="POST" style="display: inline;">
+            <input type="hidden" name="course_id" value="<?= $c['id'] ?>">
+            <button type="submit" class="modern-btn-primary modern-btn-sm" 
+                    onclick="return confirm('Enroll in this course?');">
+                <i class="fas fa-sign-in-alt"></i> Enroll Now
+            </button>
+        </form>
+    <?php else: ?>
+        <!-- disab btn  -->
+        <span class="" title="<?= htmlspecialchars($enrollDisabledReason) ?>" data-bs-toggle="tooltip" data-bs-placement="top">
+            <i class="fas fa-lock"></i>
+        </span>
+        <span class="tooltip-icon" title="<?= htmlspecialchars($enrollDisabledReason) ?>" data-bs-toggle="tooltip">
+            <i class="fas fa-info-circle"></i>Disabled
+        </span>
+    <?php endif; ?>
 <?php endif; ?>
                             
                             <!-- ADMIN/PROPONENT EDIT BUTTON -->

@@ -455,9 +455,9 @@ value="<?= ($editing && !empty($course['expires_at']))
 
 <button class="btn btn-primary">
 <i class="fas fa-file-alt">
-<a href="../admin/assesments_crud.php" class="text-white">ADD ASSESMENT NA MAANGAS</a>
+<a href="../admin/assessment_crud.php" class="text-white">Create Assessment</a>
  </i>
-        </button>
+</button>
 </div>
 
 <button class="btn btn-primary"><?= $editing ? 'Update Course' : 'Add Course' ?></button>
@@ -467,8 +467,6 @@ value="<?= ($editing && !empty($course['expires_at']))
 
 <?php else: ?>
 
-
-<a href="?act=addform" class="btn btn-success mb-3">Add New Course</a>
 
 <div class="modern-courses-grid">
 <?php foreach ($courses as $c): ?>

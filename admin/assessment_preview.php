@@ -6,7 +6,7 @@ require_login();
 // Get preview data from session
 $previewData = $_SESSION['preview_data'] ?? null;
 if (!$previewData) {
-    header('Location: assessment.php');
+    header('Location: assessment_crud.php');
     exit;
 }
 
@@ -103,7 +103,7 @@ $userId = $_SESSION['user']['id'];
                 <div class="asmpg-preview-footer">
                     <p class="text-muted mb-3">This is a preview of how the assessment will look to students.</p>
                     <div class="asmpg-button-group" style="justify-content: center;">
-                        <a href="assessment.php" class="asmpg-btn-preview" style="text-decoration: none;">
+                        <a href="../admin/assessment_crud.php" class="asmpg-btn-preview" style="text-decoration: none;">
                             <i class="fas fa-arrow-left"></i> Back to Edit
                         </a>
                         <button type="button" onclick="window.print()" class="asmpg-btn-create">
